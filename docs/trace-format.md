@@ -1,6 +1,6 @@
-# Visualizer trace format, v1 (draft 2026-11-22)
+# Trace format, v1
 
-This is a draft for the DSA visualizer, the factory's first project. It moves into the visualizer's own public repo once that exists. It contains nothing private.
+What an algorithm records as it runs, and what the renderer plays back. Decided 2026-11-22.
 
 ## Decided
 
@@ -8,7 +8,7 @@ This is a draft for the DSA visualizer, the factory's first project. It moves in
 |---|---|
 | What a step holds | The **event** (what just happened) **plus a full snapshot** of the state after it, plus marks and a note. The renderer is stateless: `render(trace, i)`. |
 | How algorithms produce it | A **tracer helper**. Algorithms call `t.compare`, `t.swap` and so on, and the tracer records the event and snapshot. Algorithms never build step objects by hand. |
-| Who writes algorithms | **The factory writes them all.** You write the specs and review PRs as an interviewer would. |
+| Who writes algorithms | **Agents write them all**, from specs a person writes. |
 | Stack | **TypeScript everywhere.** Traces are generated live in the browser, so users can type their own input. Vitest for unit tests, fast-check for property tests, Stryker for mutation tests, Playwright for screenshots. |
 
 ## Defaults I chose (overrule any of them)

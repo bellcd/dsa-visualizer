@@ -1,8 +1,6 @@
-# Visualizer tickets, batch 1 (draft 2026-11-22)
+# Tickets, batch 1
 
-These specs are for F1, F2 and the first 10 algorithm tickets. They follow [trace-format.md](trace-format.md). They wait here until the personal factory can run them, and then each one becomes a Linear ticket.
-
-Before F1: the owner creates the empty **public** visualizer repo, named `dsa-visualizer` unless you choose another name.
+Specs for F1, F2 and the first 10 algorithm tickets, written 2026-11-22. They follow [trace-format.md](trace-format.md). Each one becomes a ticket in the Linear Visualizer team.
 
 ---
 
@@ -20,11 +18,7 @@ Before F1: the owner creates the empty **public** visualizer repo, named `dsa-vi
 - **No undeclared imports.** ESLint's `import/no-extraneous-dependencies` rule fails any import of a package that isn't in `package.json`. This replaces the guard pnpm's strict layout would have given.
 - Vitest, fast-check, Stryker (`@stryker-mutator/vitest-runner`).
 - A GitHub Actions workflow on PRs that runs typecheck, lint and test. It also runs Stryker on changed files under `src/algorithms/`, with `break` set to 80.
-- **Pinned agent skills, committed in the repo.** The factory's sandboxed `claude -p` can't see the owner's home directory, so the skills it uses live in the repo.
-  - Vendor `tdd`, `implement`, `mutation-testing`, `diagnosing-bugs` and `codebase-design` from `mattpocock/skills` into `.claude/skills/<name>/`, copying each skill's whole folder.
-  - `skills-lock.json` at the root records, for each skill, the `source`, the upstream commit, the `skillPath` and a `computedHash` of the vendored folder. This is the same shape the course repo's lock uses, plus the commit.
-  - A CI check (`scripts/check-skills-lock`) fails the PR if any vendored folder's hash doesn't match the lock. Updating a skill means updating its lock entry in the same PR.
-  - `CLAUDE.md` names the skills an algorithm ticket uses: `tdd` to build it, then `mutation-testing` to read Stryker's report.
+- `AGENTS.md` gains a Commands section: typecheck, lint, test and mutation test, one line each.
 
 **Types and core** (`src/trace/`)
 - The `Trace`, `Step`, `Structure`, `Marks` and `Event` types, exactly as in trace-format.md. Only `array` is implemented. The other structure kinds are declared but unused.
