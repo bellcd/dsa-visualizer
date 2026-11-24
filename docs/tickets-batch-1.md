@@ -53,7 +53,7 @@ Specs for F1, F2 and the first 10 algorithm tickets, written 2026-11-22. They fo
 - Each algorithm test calls `algorithmContract(def, spec)` once. `spec` has these fields:
   - `arbitrary` (a fast-check input generator);
   - `check(input, result)` (correctness against a reference);
-  - `invariant(step, ctx)` (`ctx` holds the input, the step index and the previous step);
+  - `guarantee(step, ctx)` (`ctx` holds the input, the step index and the previous step);
   - `bounds(trace, input)`;
   - `examples` (edge-case inputs that are always run);
   - `pinned` (`{ input, stats, result? }` exact snapshots).
@@ -141,7 +141,7 @@ Input: values: number[], target: number
 Result: index of the first item equal to target, or -1.
 One step means: each compareValue of a[i] against target.
 Marks: pointer i (scan), range 'checked' [0, i), var target.
-Invariants: at every step, no item in 'checked' equals target; the array is never modified.
+Guarantees: at every step, no item in 'checked' equals target; the array is never modified.
 Edge cases: empty, target at index 0, target at the last index, target absent, duplicates (returns the first).
 Bounds: compares = result + 1 if found, n if absent (exact).
 Check: result === values.indexOf(target).
@@ -156,7 +156,7 @@ Algorithm: lo = 0, hi = n; while lo < hi: mid = floor((lo+hi)/2); if a[mid] < ta
            Then if lo < n and a[lo] == target return lo, else -1.
 One step means: each compareValue(mid, target) in the loop, plus the final compareValue(lo, target).
 Marks: range 'candidates' [lo, hi) (not pointers: hi can be n), pointer mid, var target.
-Invariants: every item before 'candidates' is < target; every item after it is >= target; the array is never modified.
+Guarantees: every item before 'candidates' is < target; every item after it is >= target; the array is never modified.
 Edge cases: empty, 1 item, target below all, target above all, all equal to target (returns 0), runs of duplicates.
 Bounds: compares <= ceil(log2(n + 1)) + 1; 0 when n = 0.
 Check: result === values.indexOf(target).
@@ -170,7 +170,7 @@ Result: the reversed array.
 Algorithm: i = 0, j = n-1; while i < j: swap(i, j); i++; j--.
 One step means: each swap.
 Marks: pointers i and j (cleared when i >= j), ranges 'done-left' [0, i) and 'done-right' (j, n).
-Invariants: every position in a done range holds the item whose id was at its mirror position n-1-p in the input.
+Guarantees: every position in a done range holds the item whose id was at its mirror position n-1-p in the input.
 Edge cases: empty, 1 item, 2 items, odd length, even length.
 Bounds: swaps = floor(n/2) (exact); compares = 0.
 Check: result equals values.toReversed(); final ids are [n-1, ..., 0].
@@ -185,7 +185,7 @@ Algorithm: for end from n down to 2: swapped = false; for i from 0 to end-2: if 
            After the pass, the 'sorted' range grows to [end-1, n); if not swapped, set 'sorted' to [0, n) and stop.
 One step means: each compare(i, i+1) and each swap.
 Marks: pointer i, range 'sorted' [end, n), var swapped.
-Invariants: at every step, 'sorted' is sorted and every item in it >= every item before it.
+Guarantees: at every step, 'sorted' is sorted and every item in it >= every item before it.
 Edge cases: empty, 1 item, already sorted (one pass), reverse-sorted, all equal, duplicates.
 Bounds: compares <= n(n-1)/2; swaps = number of inversions (exact).
 Pinned: [5, 1, 4, 2, 8] → compares 9, swaps 4.
@@ -200,7 +200,7 @@ Result: the sorted array.
 Algorithm: for i from 0 to n-2: min = i; for j from i+1 to n-1: if a[j] < a[min] then min = j; if min != i then swap(i, min).
 One step means: each compare(j, min) and each swap.
 Marks: pointers i, j, min; range 'sorted' [0, i).
-Invariants: at every step, 'sorted' is sorted and every item in it <= every item after it.
+Guarantees: at every step, 'sorted' is sorted and every item in it <= every item after it.
 Edge cases: empty, 1 item, already sorted (zero swaps), reverse-sorted, all equal, duplicates.
 Bounds: compares = n(n-1)/2 (exact); swaps <= n-1.
 Pinned: [64, 25, 12, 22, 11] → compares 10, swaps 3.
@@ -216,7 +216,7 @@ Algorithm: for i from 1 to n-1: j = i; while j > 0 and a[j-1] > a[j]: swap(j-1, 
            (Swap variant on purpose: the shift variant duplicates an id, which the consistency check rejects.)
 One step means: each compare(j-1, j) and each swap.
 Marks: pointer 'key' at j (the item being inserted), range 'sorted' [0, i) set at the start of each outer pass, [0, n) at done.
-Invariants: at every step, the items in [0, i] other than the one at 'key' are sorted (with 'key' cleared: 'sorted' is sorted).
+Guarantees: at every step, the items in [0, i] other than the one at 'key' are sorted (with 'key' cleared: 'sorted' is sorted).
 Edge cases: empty, 1 item, already sorted (zero swaps), reverse-sorted, all equal, duplicates (stable: equal ids keep their order).
 Bounds: swaps = number of inversions (exact); inversions <= compares <= inversions + n - 1.
 Check: result equals values.toSorted((x, y) => x - y); for equal values, final ids are in increasing order.
@@ -230,7 +230,7 @@ Result: [lo, hi] with lo < hi and a[lo] + a[hi] == target, or null.
 Algorithm: lo = 0, hi = n-1; while lo < hi: compare a[lo] with target - a[hi]; equal → return; less → lo++; greater → hi--.
 One step means: each compareValue(lo, target - a[hi]), whose note reads "a[lo] + a[hi] = s vs target".
 Marks: pointers lo and hi, vars target and sum.
-Invariants: no pair (p, q) with p < q and (p < lo or q > hi) sums to target; the array is never modified.
+Guarantees: no pair (p, q) with p < q and (p < lo or q > hi) sums to target; the array is never modified.
 Edge cases: empty, 1 item, no pair, the pair at both ends, duplicates ([3, 3] with target 6), negatives.
 Bounds: compares <= n - 1; 0 when n < 2.
 Check: if null, brute force finds no pair; otherwise the pair is valid.
@@ -247,7 +247,7 @@ Algorithm: low = 0, mid = 0, high = n-1; while mid <= high: r = compareValue(mid
 One step means: each compareValue and each swap.
 Marks: ranges 'less' [0, low), 'equal' [low, mid), 'unknown' [mid, high+1), 'greater' [high+1, n) (ranges, not pointers: high can be -1);
        pointer mid while mid <= high; var pivot.
-Invariants: the four ranges tile [0, n); each of 'less', 'equal' and 'greater' holds only matching items.
+Guarantees: the four ranges tile [0, n); each of 'less', 'equal' and 'greater' holds only matching items.
 Edge cases: empty, 1 item, all < pivot, all > pivot, all == pivot, pivot not present.
 Bounds: compares = n (exact); swaps <= n.
 Check: the result is a permutation of the input, in the less/equal/greater order.
@@ -262,7 +262,7 @@ Algorithm: cur = best = a[0]; start = 0; for i from 1 to n-1: if cur < 0 then cu
            if cur > best then best = cur, best range = [start, i+1). Ties keep the earliest.
 One step means: one t.step() per index (i = 0 included), after cur and best are updated. There are no compares; reads are silent.
 Marks: pointer i, range 'current' [start, i+1), range 'best', vars cur and best.
-Invariants: cur = the sum of 'current'; best = the sum of 'best'; best = the maximum subarray sum of a[0..i].
+Guarantees: cur = the sum of 'current'; best = the sum of 'best'; best = the maximum subarray sum of a[0..i].
 Edge cases: empty (null; only init and done), 1 item, all negative (the largest single item), all zero, alternating signs.
 Bounds: steps = n + 2 (exact); compares = 0; swaps = 0.
 Check: sum equals the brute-force maximum; the values in [from, to) sum to it; the array is never modified.
@@ -279,7 +279,7 @@ Algorithm: sort(lo, hi) with hi inclusive. If lo >= hi: tag the item at lo 'plac
            then recurse on (lo, i-1) and (i+1, hi). Use t.enter() and t.exit() around each call.
 One step means: each compare and each swap.
 Marks: range 'part' [lo, hi+1), pointers i, j and pivot (at hi), range 'le' [lo, i), tag 'placed', var pivotValue.
-Invariants: within 'part', the items in [lo, i) are <= pivotValue and the items in [i, j) are > pivotValue;
+Guarantees: within 'part', the items in [lo, i) are <= pivotValue and the items in [i, j) are > pivotValue;
             every 'placed' item has the value that sorted(input) has at that position; depth <= n.
 Edge cases: empty, 1 item, already sorted (worst case for 'last'), reverse-sorted, all equal, duplicates.
 Bounds: compares <= n(n-1)/2; the same seed gives an identical trace.

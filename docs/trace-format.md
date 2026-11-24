@@ -108,7 +108,7 @@ Pass an `AlgorithmDef` to `trace(def, input, seed?)` to get a `Trace`. A registr
 
 1. **The result is correct.** fast-check generates inputs (including empty arrays, one item, duplicates, already-sorted and reverse-sorted), and the result is checked against a reference such as `toSorted` or `indexOf`.
 2. **The trace is consistent.** This generic test is written once, in the foundation ticket. Applying each operation to the previous snapshot must reproduce the next snapshot. Ids are preserved (a permutation stays a permutation). Every mark points inside the bounds of its structure. The trace round-trips through JSON. `steps[0]` is `init` and the last step is `done`.
-3. **Algorithm-specific invariants hold on every step.** These come from your spec. For bubble sort, at every step the `sorted` range is sorted and holds the largest items.
+3. **Algorithm-specific guarantees hold on every step.** These come from your spec. For bubble sort, at every step the `sorted` range is sorted and holds the largest items.
 4. **Counts stay within bounds.** `stats` must not exceed the textbook bound for the input. For bubble sort that's `compares ≤ n(n-1)/2`. Known small inputs are pinned to exact counts with snapshot tests.
 5. **The mutation score is at least 80%** on the algorithm file (Stryker, run in CI on the changed files).
 
@@ -122,7 +122,7 @@ Input: values: number[] (0..64 items, -99..99), target: number
 Result: index of the first item equal to target, or -1.
 One step means: each compareValue of a[i] against target.
 Marks: pointer i (scan), range 'checked' [0, i), var target.
-Invariants: at every step, no item in 'checked' equals target; the array is never modified.
+Guarantees: at every step, no item in 'checked' equals target; the array is never modified.
 Edge cases: empty, target at index 0, target at the last index, target absent, duplicates (returns the first).
 Bounds: compares = result + 1 if found, n if absent (exact).
 ```

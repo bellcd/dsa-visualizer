@@ -48,18 +48,19 @@ _Avoid_: Metrics, counters
 ## Specifying and testing
 
 **Spec**:
-The description of one algorithm ticket: input, result, what one step means, marks, invariants, edge cases and bounds.
+The description of one algorithm ticket: input, result, what one step means, marks, guarantees, edge cases and bounds.
 _Avoid_: Requirements, brief
 
-**Invariant**:
-A property of one algorithm that must hold at every step of every trace, such as "the sorted range holds the largest items".
+**Guarantee**:
+A property of one algorithm that holds at every step of every trace, such as "the sorted range holds the largest items". Stricter than a loop invariant, which holds only at the start of each iteration.
+_Avoid_: Invariant
 
 **Bound**:
 The most operations an algorithm may count for an input, usually the textbook figure, such as at most n(n-1)/2 compares for bubble sort.
 _Avoid_: Limit, budget
 
 **Test contract**:
-The five checks every algorithm passes: correct result, consistent trace, invariants, bounds, and a mutation score of at least 80%.
+The five checks every algorithm passes: correct result, consistent trace, guarantees, bounds, and a mutation score of at least 80%.
 
 **Consistent trace**:
 A trace in which applying each operation to the previous state reproduces the next state exactly.
@@ -73,7 +74,3 @@ _Avoid_: Catalog, index
 **Renderer**:
 The part that draws one step of a trace. It holds no state of its own between steps.
 _Avoid_: View, player
-
-**Fixture**:
-An algorithm that exists only to exercise the renderer and tests, such as `demo-swap`. Hidden from the menu by default.
-_Avoid_: Demo, sample
