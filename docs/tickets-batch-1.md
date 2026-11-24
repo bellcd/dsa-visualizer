@@ -21,7 +21,7 @@ Specs for F1, F2 and the first 10 algorithm tickets, written 2026-11-22. They fo
 - `CLAUDE.md` gains a Commands section: typecheck, lint, test and mutation test, one line each.
 
 **Types and core** (`src/trace/`)
-- The `Trace`, `Step`, `Structure`, `Marks` and `Event` types, exactly as in trace-format.md. Only `array` is implemented. The other structure kinds are declared but unused.
+- The `Trace`, `Step`, `Structure`, `Marks` and `Operation` types, exactly as in trace-format.md. Only `array` is implemented. The other structure kinds are declared but unused.
 - `AlgorithmDef<I, R>`, which has:
   - `id`, `name` and `pseudocode: string[]`;
   - `inputFields`, a list of `{ name, kind: 'numberArray' | 'number' | 'choice', options? }` that the UI builds its form from;
@@ -59,12 +59,12 @@ Specs for F1, F2 and the first 10 algorithm tickets, written 2026-11-22. They fo
   - `pinned` (`{ input, stats, result? }` exact snapshots).
 - It generates tests for contract items 1–4 in trace-format.md, with 200 fast-check runs.
 - **Consistency checker** (contract item 2), `checkConsistency(trace)`:
-  - applying each event to the previous state reproduces the next snapshot;
+  - applying each operation to the previous state reproduces the next snapshot;
   - ids are unique within each structure (a permutation when no `set` happened);
   - marks are within bounds;
   - the trace round-trips through JSON;
   - `init` comes first and `done` last;
-  - the `stats` match the counted events.
+  - the `stats` match the counted operations.
 - Generators: `numberArrays({ min: 0, max: 64, lo: -99, hi: 99 })` and `sortedNumberArrays(...)`.
 
 **Accepted when**
@@ -130,7 +130,7 @@ Specs for F1, F2 and the first 10 algorithm tickets, written 2026-11-22. They fo
 - **Pseudocode** follows the code's structure line for line, and every step points at a `line`.
 - **Input:** unless stated otherwise, `values` holds 0–64 integers in the range −99 to 99.
 - **Stryker:** at least 80% on the algorithm file.
-- **No new event types or structure kinds.** If a ticket seems to need one, stop and comment instead.
+- **No new operation types or structure kinds.** If a ticket seems to need one, stop and comment instead.
 
 ---
 

@@ -1,7 +1,5 @@
 # dsa-visualizer
 
-Step-by-step visualizations of data structures and algorithms. An algorithm runs on a learner's input and records what it does; the visualizer plays that record back one step at a time.
-
 ## Recording
 
 **Algorithm**:
@@ -17,15 +15,15 @@ The recorder an algorithm runs against. The algorithm performs operations throug
 _Avoid_: Recorder, logger
 
 **Step**:
-One moment of playback: an event, the state after it, the marks, and optionally a pseudocode line and a note.
+One moment of playback: an operation, the state after it, the marks, and optionally a pseudocode line and a note.
 _Avoid_: Frame, tick
 
-**Event**:
-The operation a step shows, such as a compare, a swap or a set.
-_Avoid_: Action, op (outside code)
+**Operation**:
+What a step shows the algorithm doing, such as a compare, a swap or a set.
+_Avoid_: Event, action, op (outside code)
 
 **State**:
-The full contents of every structure after a step's event.
+The full contents of every structure after a step's operation.
 _Avoid_: Snapshot, frame
 
 **Structure**:
@@ -64,7 +62,7 @@ _Avoid_: Limit, budget
 The five checks every algorithm passes: correct result, consistent trace, invariants, bounds, and a mutation score of at least 80%.
 
 **Consistent trace**:
-A trace in which applying each event to the previous state reproduces the next state exactly.
+A trace in which applying each operation to the previous state reproduces the next state exactly.
 
 ## Playing back
 
