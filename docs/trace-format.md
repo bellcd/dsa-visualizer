@@ -1,22 +1,22 @@
-# Visualizer trace format, v1 (draft 2026-11-22)
+# Trace format, v1
 
-This is a draft for the DSA visualizer, the factory's first project. It moves into the visualizer's own public repo once that exists. It contains nothing private.
+What an algorithm records as it runs, and what the renderer plays back. Decided 2026-11-22.
 
 ## Decided
 
 | Question | Decision |
 |---|---|
-| What a step holds | The **event** (what just happened) **plus a full snapshot** of the state after it, plus marks and a note. The renderer is stateless: `render(trace, i)`. |
-| How algorithms produce it | A **tracer helper**. Algorithms call `t.compare`, `t.swap` and so on, and the tracer records the event and snapshot. Algorithms never build step objects by hand. |
-| Who writes algorithms | **The factory writes them all.** You write the specs and review PRs as an interviewer would. |
+| What a step holds | The **operation** (what just happened) **plus a full snapshot** of the state after it, plus marks and a note. The renderer is stateless: `render(trace, i)`. |
+| How algorithms produce it | A **tracer helper**. Algorithms call `t.compare`, `t.swap` and so on, and the tracer records the operation and snapshot. Algorithms never build step objects by hand. |
+| Who writes algorithms | **Agents write them all**, from specs a person writes. |
 | Stack | **TypeScript everywhere.** Traces are generated live in the browser, so users can type their own input. Vitest for unit tests, fast-check for property tests, Stryker for mutation tests, Playwright for screenshots. |
 
 ## Defaults I chose (overrule any of them)
 
-1. **A snapshot holds several named structures, starting in v1.** `state` is a map from a name to a structure, such as `{ a: array, buf: array }`. Every event names its `target`. Sorting an array uses only `a`. Merge sort, counting sort, heap sort (array plus a tree view) and Dijkstra (a graph, a queue and a distance table) need more than one structure. Adding this later would break every trace.
+1. **A snapshot holds several named structures, starting in v1.** `state` is a map from a name to a structure, such as `{ a: array, buf: array }`. Every operation names its `target`. Sorting an array uses only `a`. Merge sort, counting sort, heap sort (array plus a tree view) and Dijkstra (a graph, a queue and a distance table) need more than one structure. Adding this later would break every trace.
 2. **Items have stable ids.** An array item is `{ id, value }`, not a bare value. That lets the renderer animate a swap even when values repeat (FLIP between snapshots).
-3. **Marks attach to the next event.** Setting a pointer, range, tag, variable, note or pseudocode line doesn't create a step of its own. These changes wait and are folded into the next recorded event. `t.step()` flushes them explicitly, for a "look at this" step that has no operation.
-4. **Reads aren't events.** `t.get(i)` is silent, because reads are noise in playback. Comparisons are events, because they are what the lesson is about.
+3. **Marks attach to the next operation.** Setting a pointer, range, tag, variable, note or pseudocode line doesn't create a step of its own. These changes wait and are folded into the next recorded operation. `t.step()` flushes them explicitly, for a "look at this" step that changes nothing else.
+4. **Reads aren't recorded.** `t.get(i)` is silent, because reads are noise in playback. Comparisons are operations, because they are what the lesson is about.
 5. **Every algorithm has numbered pseudocode lines,** and each step can point at one (`line`). The renderer highlights that line. Quiz mode can later ask "what's the next line?"
 6. **Algorithms are deterministic.** A randomized algorithm takes `t.rng`, which is seeded from the trace's `seed`.
 7. **A trace is capped at 10,000 steps.** Past that, the tracer throws `TraceLimitExceeded`. The UI caps input at 64 items for arrays and 30 nodes for graphs.
@@ -30,15 +30,15 @@ type Trace = {
   algorithm: { id: string; name: string; pseudocode: string[] };
   input: Record<string, unknown>;          // e.g. { values: [5, 1, 4] }
   seed?: number;
-  steps: Step[];                            // steps[0] is the 'init' event
+  steps: Step[];                            // steps[0] is the 'init' operation
   result: unknown;                          // e.g. the sorted array, or a found index (or -1)
   stats: Record<string, number>;            // e.g. { compares: 10, swaps: 4 }
 };
 
 type Step = {
-  event: Event;
-  state: Record<string, Structure>;         // full snapshot after the event
-  marks: Marks;                             // full marks after the event (not a diff)
+  operation: Operation;
+  state: Record<string, Structure>;         // full snapshot after the operation
+  marks: Marks;                             // full marks after the operation (not a diff)
   line?: number;                            // index into pseudocode
   note?: string;                            // e.g. "9 > 4, swap"
   depth?: number;                           // recursion depth, for merge sort and quicksort
@@ -60,7 +60,7 @@ type Marks = {
 };
 ```
 
-### Array events (v1)
+### Array operations (v1)
 
 | op | fields | meaning |
 |---|---|---|
@@ -69,10 +69,10 @@ type Marks = {
 | `compareValue` | `target, i, value, result` | Compares an item with a held value (a pivot, a key, a search target). |
 | `swap` | `target, i, j` | Swaps two items. |
 | `set` | `target, i, value, prev` | Writes a value. The slot gets a new id. Copying an item with its id comes with the multi-structure tickets. |
-| `mark` | n/a | Marks or a note changed with no operation (`t.step()`). |
+| `mark` | n/a | Marks or a note changed on their own (`t.step()`). |
 | `done` | n/a | The final step. |
 
-Graph, tree and table events (`visit`, `relax`, `enqueue`, `insert` and so on) arrive with the first M ticket that needs them.
+Graph, tree and table operations (`visit`, `relax`, `enqueue`, `insert` and so on) arrive with the first M ticket that needs them.
 
 ## Tracer API (array)
 
@@ -107,8 +107,8 @@ Pass an `AlgorithmDef` to `trace(def, input, seed?)` to get a `Trace`. A registr
 ## Test contract (every algorithm ticket must pass all five)
 
 1. **The result is correct.** fast-check generates inputs (including empty arrays, one item, duplicates, already-sorted and reverse-sorted), and the result is checked against a reference such as `toSorted` or `indexOf`.
-2. **The trace is consistent.** This generic test is written once, in the foundation ticket. Applying each event to the previous snapshot must reproduce the next snapshot. Ids are preserved (a permutation stays a permutation). Every mark points inside the bounds of its structure. The trace round-trips through JSON. `steps[0]` is `init` and the last step is `done`.
-3. **Algorithm-specific invariants hold on every step.** These come from your spec. For bubble sort, at every step the `sorted` range is sorted and holds the largest items.
+2. **The trace is consistent.** This generic test is written once, in the foundation ticket. Applying each operation to the previous snapshot must reproduce the next snapshot. Ids are preserved (a permutation stays a permutation). Every mark points inside the bounds of its structure. The trace round-trips through JSON. `steps[0]` is `init` and the last step is `done`.
+3. **Algorithm-specific guarantees hold on every step.** These come from your spec. For bubble sort, at every step the `sorted` range is sorted and holds the largest items.
 4. **Counts stay within bounds.** `stats` must not exceed the textbook bound for the input. For bubble sort that's `compares ≤ n(n-1)/2`. Known small inputs are pinned to exact counts with snapshot tests.
 5. **The mutation score is at least 80%** on the algorithm file (Stryker, run in CI on the changed files).
 
@@ -122,7 +122,7 @@ Input: values: number[] (0..64 items, -99..99), target: number
 Result: index of the first item equal to target, or -1.
 One step means: each compareValue of a[i] against target.
 Marks: pointer i (scan), range 'checked' [0, i), var target.
-Invariants: at every step, no item in 'checked' equals target; the array is never modified.
+Guarantees: at every step, no item in 'checked' equals target; the array is never modified.
 Edge cases: empty, target at index 0, target at the last index, target absent, duplicates (returns the first).
 Bounds: compares = result + 1 if found, n if absent (exact).
 ```
@@ -145,6 +145,6 @@ Bounds: compares = result + 1 if found, n if absent (exact).
 9. Kadane's maximum subarray (uses `vars` and `ranges`)
 10. Quicksort, Lomuto partition (`depth`, seeded pivot as a variant)
 
-**Next (S/M, multi-structure):** counting sort (`a` plus `count`), merge sort (`a` plus `buf`, recursion), then heap sort (an array plus a tree view of the same items). Graph algorithms (BFS, DFS, Dijkstra) are the first M batch. Each one adds its structure's events and renderer.
+**Next (S/M, multi-structure):** counting sort (`a` plus `count`), merge sort (`a` plus `buf`, recursion), then heap sort (an array plus a tree view of the same items). Graph algorithms (BFS, DFS, Dijkstra) are the first M batch. Each one adds its structure's operations and renderer.
 
-**Later (L):** side-by-side comparison of two traces on the same input, quiz mode (predict the next event or line), and the HTML-in-Canvas renderer spike behind a feature check.
+**Later (L):** side-by-side comparison of two traces on the same input, quiz mode (predict the next operation or line), and the HTML-in-Canvas renderer spike behind a feature check.
