@@ -19,6 +19,7 @@ describe('registry', () => {
     expect(menuGroups('?a=1&fixtures').map((g) => g.name)).toContain(
       'Fixtures',
     );
+    expect(menuGroups('').map((g) => g.name)).toEqual(['Algorithms']);
     expect(showFixtures('?fixtures')).toBe(true);
     expect(showFixtures('?fixture')).toBe(false);
   });
@@ -68,7 +69,28 @@ describe('demo-swap', () => {
     expect(t2.stats.swaps).toBe(0);
   });
 
+  test('skips the swap when the first two values are equal', () => {
+    const t2 = trace(demoSwapDef, { values: [3, 3, 4, 2, 3] });
+    expect(t2.stats.swaps).toBe(0);
+  });
+
+  test('describes itself for the menu and the input form', () => {
+    expect(demoSwapDef.name).toBe('Demo: swap');
+    expect(demoSwapDef.pseudocode).toEqual([
+      'compare a[0] with a[1]',
+      'swap a[0], a[1]',
+      'compare a[2] with the held value',
+      'write the held value to a[4]',
+    ]);
+    expect(demoSwapDef.inputFields).toEqual([
+      { name: 'values', kind: 'numberArray' },
+    ]);
+  });
+
   test('needs exactly 5 values', () => {
     expect(() => trace(demoSwapDef, { values: [1] })).toThrow(InputError);
+    expect(() => trace(demoSwapDef, { values: [1] })).toThrow(
+      'demo-swap needs exactly 5 values',
+    );
   });
 });
