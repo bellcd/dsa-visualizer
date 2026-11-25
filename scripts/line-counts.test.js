@@ -22,7 +22,7 @@ function run(cwd) {
   return spawnSync("bash", [script], { cwd, encoding: "utf8" });
 }
 
-test("prints count and path for each tracked file under src/", () => {
+test("line-counts.sh prints count and path for each tracked file under src/", () => {
   const dir = repo();
   mkdirSync(join(dir, "src/sub"), { recursive: true });
   writeFileSync(join(dir, "src/a.ts"), "one\ntwo\nthree\n");
@@ -34,7 +34,7 @@ test("prints count and path for each tracked file under src/", () => {
   assert.equal(result.stdout, "3 src/a.ts\n3 src/sub/b.ts\n");
 });
 
-test("leaves out untracked and ignored files", () => {
+test("line-counts.sh leaves out untracked and ignored files", () => {
   const dir = repo();
   mkdirSync(join(dir, "src"));
   writeFileSync(join(dir, ".gitignore"), "src/ignored.ts\n");
@@ -45,7 +45,7 @@ test("leaves out untracked and ignored files", () => {
   assert.equal(run(dir).stdout, "1 src/tracked.ts\n");
 });
 
-test("handles paths with spaces", () => {
+test("line-counts.sh handles paths with spaces", () => {
   const dir = repo();
   mkdirSync(join(dir, "src"));
   writeFileSync(join(dir, "src/my file.ts"), "a\nb\n");
@@ -53,9 +53,9 @@ test("handles paths with spaces", () => {
   assert.equal(run(dir).stdout, "2 src/my file.ts\n");
 });
 
-test("exits 1 with a message on stderr when src/ is missing", () => {
+test("line-counts.sh exits 1 with a message on stderr when src/ is missing", () => {
   const result = run(repo());
   assert.equal(result.status, 1);
   assert.equal(result.stdout, "");
-  assert.match(result.stderr, /src\/ does not exist/);
+  assert.equal(result.stderr, "line-counts.sh: src/ does not exist\n");
 });

@@ -1,6 +1,5 @@
 #!/usr/bin/env bash
-# Print every tracked file under src/ as "count path", one per line.
-# Counts every line, blank and comment-only lines included.
+# NOTE: counts every line, blank and comment-only included; VS-14 leaves that open.
 set -euo pipefail
 
 if [[ ! -d src ]]; then
