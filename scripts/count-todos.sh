@@ -1,6 +1,4 @@
 #!/usr/bin/env bash
-# Print each tracked file under src/ that contains TODO, with its count of
-# matching lines, as "path: count", sorted by path. Exits non-zero if src/ is missing.
 set -euo pipefail
 
 cd "$(git rev-parse --show-toplevel)"
@@ -12,6 +10,7 @@ fi
 
 git ls-files -z -- src | while IFS= read -r -d '' file; do
   [[ -f $file ]] || continue
+  # NOTE: -a counts TODOs in files grep would otherwise treat as binary.
   count=$(grep -c -a -- 'TODO' "$file" || true)
   if [[ $count -gt 0 ]]; then
     printf '%s: %s\n' "$file" "$count"
