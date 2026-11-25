@@ -1,0 +1,17 @@
+{
+  "name": "dsa-visualizer",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": "24.x"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "check-exact-deps": "node scripts/check-exact-deps",
+    "test": "node --test 'scripts/*.test.js'"
+  },
+  "devDependencies": {
+    "typescript": "7.0.2"
+  }
+}
