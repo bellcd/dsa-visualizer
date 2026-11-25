@@ -1,0 +1,25 @@
+#!/usr/bin/env node
+// Prints every TODO or FIXME comment under a directory (default: src), one per
+// line as `path:line: text`, sorted by path then line.
+import { readdirSync, readFileSync } from "node:fs";
+import { join } from "node:path";
+
+const COMMENT = /(?:\/\/|\/\*)\s*(.*\b(?:TODO|FIXME)\b.*)/;
+
+const root = process.argv[2] ?? "src";
+
+const files = readdirSync(root, { recursive: true, withFileTypes: true })
+  .filter((entry) => entry.isFile())
+  .map((entry) => join(entry.parentPath, entry.name))
+  .sort();
+
+for (const file of files) {
+  const lines = readFileSync(file, "utf8").split("\n");
+  lines.forEach((line, i) => {
+    const match = COMMENT.exec(line);
+    if (match) {
+      const text = match[1].replace(/\s*\*\/\s*$/, "").trim();
+      console.log(`${file}:${i + 1}: ${text}`);
+    }
+  });
+}
