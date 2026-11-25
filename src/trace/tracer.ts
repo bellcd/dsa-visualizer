@@ -1,12 +1,11 @@
 import { TraceLimitExceeded } from './errors.js';
 import type { Marks, Operation, Step, Structure, VarValue } from './types.js';
 
-/** The most steps a trace may hold, `init` and `done` included. */
 export const MAX_STEPS = 10_000;
 
 type ArrayStructure = Extract<Structure, { kind: 'array' }>;
 
-/** Mulberry32: a small deterministic generator, so a seed reproduces a trace. */
+// NOTE: Mulberry32 is deterministic, so a seed reproduces a trace.
 function seededRng(seed: number): () => number {
   let s = seed >>> 0;
   return () => {
@@ -24,7 +23,6 @@ function sign(n: number): -1 | 0 | 1 {
   return 0;
 }
 
-/** One array structure, as an algorithm sees it. Reads are silent. */
 export class ArrayHandle {
   readonly #tracer: Tracer;
   readonly #name: string;
@@ -87,7 +85,6 @@ export class ArrayHandle {
   }
 }
 
-/** The recorder an algorithm runs against. */
 export class Tracer {
   readonly rng: () => number;
   readonly #state: Record<string, Structure> = {};
@@ -154,7 +151,6 @@ export class Tracer {
   }
 
   #push(operation: Operation, reserveDone: boolean): void {
-    // Leave room for the final `done` step.
     const room = reserveDone ? MAX_STEPS - 1 : MAX_STEPS;
     if (this.#steps.length >= room) throw new TraceLimitExceeded(MAX_STEPS);
     const step: Step = {
@@ -183,7 +179,6 @@ export class Tracer {
     }
   }
 
-  /** Sets pointer `name`, or clears it when `at` is null. */
   pointer(name: string, target: string, at: number | string | null): void {
     if (at === null) {
       delete this.#marks.pointers[name];
@@ -193,15 +188,9 @@ export class Tracer {
     this.#marks.pointers[name] = { target, at };
   }
 
-  /** Sets range `name` to [from, to), or clears it when `from` is null. */
-  range(name: string, target: string, from: number | null, to?: number): void {
-    if (from === null) {
-      delete this.#marks.ranges[name];
-      return;
-    }
+  range(name: string, target: string, from: number, to: number): void {
     const length = this.arrayOf(target).items.length;
     if (
-      to === undefined ||
       !Number.isInteger(from) ||
       !Number.isInteger(to) ||
       from < 0 ||
@@ -209,10 +198,14 @@ export class Tracer {
       to > length
     ) {
       throw new RangeError(
-        `Range [${from}, ${String(to)}) is out of bounds for '${target}' (length ${length})`,
+        `Range [${from}, ${to}) is out of bounds for '${target}' (length ${length})`,
       );
     }
     this.#marks.ranges[name] = { target, from, to };
+  }
+
+  clearRange(name: string): void {
+    delete this.#marks.ranges[name];
   }
 
   tag(target: string, at: number | string, tag: string): void {
@@ -238,17 +231,14 @@ export class Tracer {
     this.#marks.vars[name] = value;
   }
 
-  /** The pseudocode line, which persists until changed. */
   line(index: number): void {
     this.#line = index;
   }
 
-  /** A note for the next step only. */
   note(text: string): void {
     this.#note = text;
   }
 
-  /** Records a step that changes nothing but marks or the note. */
   step(): void {
     this.#push({ op: 'mark' }, true);
   }

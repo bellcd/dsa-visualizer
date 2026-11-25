@@ -56,7 +56,7 @@ describe('trace()', () => {
     expect(JSON.parse(JSON.stringify(tr))).toEqual(tr);
   });
 
-  test('copies the input and the pseudocode', () => {
+  test('trace() copies the input and the pseudocode', () => {
     const values = [1, 2];
     const d = def(() => 0);
     const tr = trace(d, { values });
@@ -91,7 +91,7 @@ describe('trace()', () => {
 });
 
 describe('ids', () => {
-  test('are assigned 0..n-1 by index at setup', () => {
+  test('ids are assigned 0..n-1 by index at setup', () => {
     const tr = run([9, 9, 9], () => 0);
     expect(tr.steps[0]?.state.a).toEqual({
       kind: 'array',
@@ -103,7 +103,7 @@ describe('ids', () => {
     });
   });
 
-  test('follow the items through a swap', () => {
+  test('ids follow the items through a swap', () => {
     const tr = run([5, 6], (t) => t.array('a').swap(0, 1));
     expect(tr.steps[1]?.state.a).toEqual({
       kind: 'array',
@@ -156,7 +156,7 @@ describe('init and done', () => {
 });
 
 describe('operations append exactly one step', () => {
-  test('compare', () => {
+  test('compare appends exactly one step', () => {
     const tr = run([1, 2], (t) => {
       expect(t.array('a').compare(0, 1)).toBe(-1);
       expect(t.array('a').compare(1, 0)).toBe(1);
@@ -170,7 +170,7 @@ describe('operations append exactly one step', () => {
     expect(tr.steps).toHaveLength(5);
   });
 
-  test('compareValue', () => {
+  test('compareValue appends exactly one step', () => {
     const tr = run([4], (t) => {
       const a = t.array('a');
       expect([
@@ -189,7 +189,7 @@ describe('operations append exactly one step', () => {
     expect(tr.steps).toHaveLength(5);
   });
 
-  test('swap', () => {
+  test('swap appends exactly one step', () => {
     const tr = run([1, 2, 3], (t) => t.array('a').swap(0, 2));
     expect(tr.steps[1]?.operation).toEqual({
       op: 'swap',
@@ -200,7 +200,7 @@ describe('operations append exactly one step', () => {
     expect(tr.steps).toHaveLength(3);
   });
 
-  test('set', () => {
+  test('set appends exactly one step', () => {
     const tr = run([1, 2], (t) => t.array('a').set(1, 8));
     expect(tr.steps[1]?.operation).toEqual({
       op: 'set',
@@ -212,7 +212,7 @@ describe('operations append exactly one step', () => {
     expect(tr.steps).toHaveLength(3);
   });
 
-  test('step', () => {
+  test('step appends exactly one step', () => {
     const tr = run([1], (t) => {
       t.step();
       t.step();
@@ -255,7 +255,7 @@ describe('operations append exactly one step', () => {
 });
 
 describe('swap(i, i)', () => {
-  test('is recorded and counted, and changes nothing', () => {
+  test('swap(i, i) is recorded and counted, and changes nothing', () => {
     const tr = run([7, 8], (t) => t.array('a').swap(1, 1));
     expect(tr.steps[1]?.operation).toEqual({
       op: 'swap',
@@ -269,7 +269,7 @@ describe('swap(i, i)', () => {
 });
 
 describe('set(i, v)', () => {
-  test('gives the slot a new, unused id', () => {
+  test('set(i, v) gives the slot a new, unused id', () => {
     const tr = run([1, 2, 3], (t) => {
       const a = t.array('a');
       a.set(0, 10);
@@ -315,7 +315,7 @@ describe('pointer, range, tag, untag, setVar persist and create no step', () => 
       t.step();
       t.range('sorted', 'a', 3, 3);
       t.step();
-      t.range('sorted', 'a', null);
+      t.clearRange('sorted');
       t.step();
     });
     expect(tr.steps.map((s) => s.marks.ranges)).toEqual([
@@ -371,7 +371,7 @@ describe('pointer, range, tag, untag, setVar persist and create no step', () => 
     ]);
   });
 
-  test('none of them creates a step of its own', () => {
+  test('pointer, range, tag, untag, setVar, depth, line and note create no step of their own', () => {
     expect(
       ops([1, 2], (t) => {
         t.pointer('i', 'a', 0);
@@ -387,7 +387,7 @@ describe('pointer, range, tag, untag, setVar persist and create no step', () => 
     ).toEqual(['init', 'done']);
   });
 
-  test('a pointer may be a name and a range may be empty at the end', () => {
+  test('a range may be empty at the end of the array', () => {
     const tr = run([1, 2], (t) => {
       t.range('r', 'a', 2, 2);
       t.step();
@@ -401,7 +401,7 @@ describe('pointer, range, tag, untag, setVar persist and create no step', () => 
 });
 
 describe('depth', () => {
-  test('enter and exit persist until changed; zero is omitted', () => {
+  test('depth from enter and exit persists until changed, and zero is omitted', () => {
     const tr = run([1], (t) => {
       t.step();
       t.enter();
@@ -425,7 +425,7 @@ describe('depth', () => {
     ).toBe(true);
   });
 
-  test('exit without enter throws', () => {
+  test('exit() without a matching enter() throws', () => {
     expect(() => run([1], (t) => t.exit())).toThrow('enter');
   });
 });
@@ -450,7 +450,7 @@ describe('line and note', () => {
     ]);
   });
 
-  test('line 0 is kept', () => {
+  test('line 0 is kept on the step rather than treated as unset', () => {
     const tr = run([1], (t) => {
       t.line(0);
       t.step();
@@ -477,7 +477,7 @@ describe('line and note', () => {
 });
 
 describe('stats', () => {
-  test('count compares (both kinds), swaps and sets', () => {
+  test('stats count compares (both kinds), swaps and sets', () => {
     const tr = run([1, 2, 3], (t) => {
       const a = t.array('a');
       a.compare(0, 1);
@@ -493,13 +493,13 @@ describe('stats', () => {
     expect(tr.stats).toEqual({ compares: 3, swaps: 2, sets: 1 });
   });
 
-  test('are all zero for an empty run', () => {
+  test('stats are all zero for an empty run', () => {
     expect(run([], () => 0).stats).toEqual({ compares: 0, swaps: 0, sets: 0 });
   });
 });
 
 describe('reads', () => {
-  test('length, get and values reflect the current state, silently', () => {
+  test('array reads (length, get, values) reflect the current state, silently', () => {
     const seen: unknown[] = [];
     const tr = run([4, 5], (t) => {
       const a = t.array('a');
@@ -512,7 +512,7 @@ describe('reads', () => {
     expect(tr.steps).toHaveLength(3);
   });
 
-  test('values returns a copy', () => {
+  test('array values() returns a copy', () => {
     const tr = run([1, 2], (t) => {
       t.array('a').values().reverse();
       return t.array('a').values();
@@ -522,16 +522,25 @@ describe('reads', () => {
 });
 
 describe('rng', () => {
-  const draws = (seed?: number) =>
-    run([], (t) => [t.rng(), t.rng(), t.rng()], seed).result as number[];
+  const draws = (seed?: number): number[] => {
+    let out: number[] = [];
+    run(
+      [],
+      (t) => {
+        out = [t.rng(), t.rng(), t.rng()];
+      },
+      seed,
+    );
+    return out;
+  };
 
-  test('is deterministic for a seed and differs between seeds', () => {
+  test('rng is deterministic for a seed and differs between seeds', () => {
     expect(draws(1)).toEqual(draws(1));
     expect(draws(1)).not.toEqual(draws(2));
     expect(draws()).toEqual(draws(0));
   });
 
-  test('yields numbers in [0, 1) that vary', () => {
+  test('rng yields numbers in [0, 1) that vary', () => {
     const d = draws(42);
     expect(d.every((x) => x >= 0 && x < 1)).toBe(true);
     expect(new Set(d).size).toBe(3);
@@ -540,20 +549,27 @@ describe('rng', () => {
 
 describe('errors', () => {
   test('an index out of bounds is a RangeError', () => {
-    const bad: ((t: Tracer) => unknown)[] = [
-      (t) => t.array('a').get(2),
-      (t) => t.array('a').get(-1),
-      (t) => t.array('a').get(0.5),
-      (t) => t.array('a').compare(0, 2),
-      (t) => t.array('a').compare(2, 0),
-      (t) => t.array('a').compareValue(2, 0),
-      (t) => t.array('a').swap(0, 2),
-      (t) => t.array('a').swap(2, 0),
-      (t) => t.array('a').set(2, 0),
-    ];
-    for (const fn of bad) {
-      expect(() => run([1, 2], fn)).toThrow(RangeError);
-    }
+    expect(() => run([1, 2], (t) => t.array('a').get(2))).toThrow(RangeError);
+    expect(() => run([1, 2], (t) => t.array('a').get(-1))).toThrow(RangeError);
+    expect(() => run([1, 2], (t) => t.array('a').get(0.5))).toThrow(RangeError);
+    expect(() => run([1, 2], (t) => t.array('a').compare(0, 2))).toThrow(
+      RangeError,
+    );
+    expect(() => run([1, 2], (t) => t.array('a').compare(2, 0))).toThrow(
+      RangeError,
+    );
+    expect(() => run([1, 2], (t) => t.array('a').compareValue(2, 0))).toThrow(
+      RangeError,
+    );
+    expect(() => run([1, 2], (t) => t.array('a').swap(0, 2))).toThrow(
+      RangeError,
+    );
+    expect(() => run([1, 2], (t) => t.array('a').swap(2, 0))).toThrow(
+      RangeError,
+    );
+    expect(() => run([1, 2], (t) => t.array('a').set(2, 0))).toThrow(
+      RangeError,
+    );
   });
 
   test('a failed operation records nothing and changes nothing', () => {
@@ -573,35 +589,42 @@ describe('errors', () => {
   });
 
   test('a mark on an unknown structure throws', () => {
-    const bad: ((t: Tracer) => unknown)[] = [
-      (t) => t.array('nope'),
-      (t) => t.pointer('i', 'nope', 0),
-      (t) => t.range('r', 'nope', 0, 1),
-      (t) => t.tag('nope', 0, 't'),
-    ];
-    for (const fn of bad) {
-      expect(() => run([1], fn)).toThrow('nope');
-    }
+    expect(() => run([1], (t) => t.array('nope'))).toThrow('nope');
+    expect(() => run([1], (t) => t.pointer('i', 'nope', 0))).toThrow('nope');
+    expect(() => run([1], (t) => t.range('r', 'nope', 0, 1))).toThrow('nope');
+    expect(() => run([1], (t) => t.tag('nope', 0, 't'))).toThrow('nope');
   });
 
   test('a mark out of bounds throws', () => {
-    const bad: ((t: Tracer) => unknown)[] = [
-      (t) => t.pointer('i', 'a', 2),
-      (t) => t.pointer('i', 'a', -1),
-      (t) => t.pointer('i', 'a', 0.5),
-      (t) => t.pointer('i', 'a', 'x'),
-      (t) => t.range('r', 'a', 0, 3),
-      (t) => t.range('r', 'a', -1, 1),
-      (t) => t.range('r', 'a', 2, 1),
-      (t) => t.range('r', 'a', 0.5, 1),
-      (t) => t.range('r', 'a', 0, 1.5),
-      (t) => t.range('r', 'a', 0),
-      (t) => t.tag('a', 2, 't'),
-      (t) => t.tag('a', -1, 't'),
-    ];
-    for (const fn of bad) {
-      expect(() => run([1, 2], fn)).toThrow(RangeError);
-    }
+    expect(() => run([1, 2], (t) => t.pointer('i', 'a', 2))).toThrow(
+      RangeError,
+    );
+    expect(() => run([1, 2], (t) => t.pointer('i', 'a', -1))).toThrow(
+      RangeError,
+    );
+    expect(() => run([1, 2], (t) => t.pointer('i', 'a', 0.5))).toThrow(
+      RangeError,
+    );
+    expect(() => run([1, 2], (t) => t.pointer('i', 'a', 'x'))).toThrow(
+      RangeError,
+    );
+    expect(() => run([1, 2], (t) => t.range('r', 'a', 0, 3))).toThrow(
+      RangeError,
+    );
+    expect(() => run([1, 2], (t) => t.range('r', 'a', -1, 1))).toThrow(
+      RangeError,
+    );
+    expect(() => run([1, 2], (t) => t.range('r', 'a', 2, 1))).toThrow(
+      RangeError,
+    );
+    expect(() => run([1, 2], (t) => t.range('r', 'a', 0.5, 1))).toThrow(
+      RangeError,
+    );
+    expect(() => run([1, 2], (t) => t.range('r', 'a', 0, 1.5))).toThrow(
+      RangeError,
+    );
+    expect(() => run([1, 2], (t) => t.tag('a', 2, 't'))).toThrow(RangeError);
+    expect(() => run([1, 2], (t) => t.tag('a', -1, 't'))).toThrow(RangeError);
   });
 
   test('more than 10,000 steps throws TraceLimitExceeded', () => {

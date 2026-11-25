@@ -8,17 +8,12 @@ export type AlgorithmDef<
   id: string;
   name: string;
   pseudocode: string[];
-  /** The UI builds its input form from these. */
   inputFields: InputField[];
-  /** Throws `InputError` with a readable message when the input is unusable. */
   validate(input: I): void;
-  /** Returns the initial structures, by name. */
   setup(input: I): Record<string, number[]>;
-  /** Runs the algorithm against the tracer and returns the result. */
   run(t: Tracer, input: I): R;
 };
 
-/** Runs `def` on `input` and records every step. */
 export function trace<I extends Record<string, unknown>, R>(
   def: AlgorithmDef<I, R>,
   input: I,

@@ -2,7 +2,6 @@ import { type AlgorithmDef, InputError } from '../../trace/index.js';
 
 type Input = { values: number[] };
 
-/** A fixture that exercises every operation and mark type once. */
 export const demoSwapDef: AlgorithmDef<Input, number[]> = {
   id: 'demo-swap',
   name: 'Demo: swap',

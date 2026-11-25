@@ -12,15 +12,23 @@ describe('registry', () => {
     );
   });
 
-  test('the menu hides fixtures unless ?fixtures is in the URL', () => {
-    expect(menuGroups('').map((g) => g.hidden)).toEqual([false]);
+  test('menuGroups hides the fixtures group when the URL has no ?fixtures', () => {
+    expect(menuGroups('').map((g) => g.name)).toEqual(['Algorithms']);
     expect(menuGroups('?x=1').map((g) => g.hidden)).toEqual([false]);
+  });
+
+  test('menuGroups shows the fixtures group when the URL has ?fixtures', () => {
     expect(menuGroups('?fixtures').map((g) => g.hidden)).toEqual([false, true]);
     expect(menuGroups('?a=1&fixtures').map((g) => g.name)).toContain(
       'Fixtures',
     );
-    expect(menuGroups('').map((g) => g.name)).toEqual(['Algorithms']);
+  });
+
+  test('showFixtures is true when the query string has fixtures', () => {
     expect(showFixtures('?fixtures')).toBe(true);
+  });
+
+  test('showFixtures is false for a similar but different parameter', () => {
     expect(showFixtures('?fixture')).toBe(false);
   });
 });
@@ -28,7 +36,7 @@ describe('registry', () => {
 describe('demo-swap', () => {
   const tr = trace(demoSwapDef, { values: [5, 1, 4, 2, 3] });
 
-  test('does compares, a swap, a compareValue, a set and a mark step', () => {
+  test('demo-swap does compares, a swap, a compareValue, a set and a mark step', () => {
     const ops = tr.steps.map((s: { operation: Operation }) => s.operation.op);
     expect(ops).toEqual([
       'init',
@@ -43,7 +51,7 @@ describe('demo-swap', () => {
     expect(tr.result).toEqual([1, 5, 4, 2, 4]);
   });
 
-  test('uses every mark type, a note and depth', () => {
+  test('demo-swap uses every mark type, a note and depth', () => {
     const [, cmp, , , mark] = tr.steps;
     expect(cmp?.note).toBe('compare the first two');
     expect(cmp?.marks.pointers).toEqual({
@@ -64,17 +72,17 @@ describe('demo-swap', () => {
     expect(tr.steps.map((s) => s.line)).toEqual([undefined, 0, 1, 2, 2, 3, 3]);
   });
 
-  test('skips the swap when already ordered', () => {
+  test('demo-swap skips the swap when already ordered', () => {
     const t2 = trace(demoSwapDef, { values: [1, 5, 4, 2, 3] });
     expect(t2.stats.swaps).toBe(0);
   });
 
-  test('skips the swap when the first two values are equal', () => {
+  test('demo-swap skips the swap when the first two values are equal', () => {
     const t2 = trace(demoSwapDef, { values: [3, 3, 4, 2, 3] });
     expect(t2.stats.swaps).toBe(0);
   });
 
-  test('describes itself for the menu and the input form', () => {
+  test('demo-swap describes itself for the menu and the input form', () => {
     expect(demoSwapDef.name).toBe('Demo: swap');
     expect(demoSwapDef.pseudocode).toEqual([
       'compare a[0] with a[1]',
@@ -87,7 +95,7 @@ describe('demo-swap', () => {
     ]);
   });
 
-  test('needs exactly 5 values', () => {
+  test('demo-swap needs exactly 5 values', () => {
     expect(() => trace(demoSwapDef, { values: [1] })).toThrow(InputError);
     expect(() => trace(demoSwapDef, { values: [1] })).toThrow(
       'demo-swap needs exactly 5 values',

@@ -2,21 +2,26 @@ export type Item = { id: number; value: number };
 
 export type Structure =
   | { kind: 'array'; items: Item[] }
-  // Declared for later versions, not implemented by the tracer yet.
+  // NOTE: Only `array` is implemented; the other kinds are declared for later versions.
   | {
       kind: 'graph';
       directed: boolean;
-      nodes: { id: string; label?: string }[];
-      edges: { id: string; from: string; to: string; weight?: number }[];
+      nodes: Array<{ id: string; label?: string }>;
+      edges: Array<{ id: string; from: string; to: string; weight?: number }>;
     }
   | {
       kind: 'tree';
       root: string | null;
-      nodes: { id: string; value: number; left?: string; right?: string }[];
+      nodes: Array<{
+        id: string;
+        value: number;
+        left?: string;
+        right?: string;
+      }>;
     }
   | {
       kind: 'table';
-      rows: { key: string; value: number | string | null }[];
+      rows: Array<{ key: string; value: number | string | null }>;
     };
 
 export type VarValue = number | string | boolean | null;
@@ -24,7 +29,10 @@ export type VarValue = number | string | boolean | null;
 export type Marks = {
   pointers: Record<string, { target: string; at: number | string }>;
   ranges: Record<string, { target: string; from: number; to: number }>;
-  tags: Record<string, { target: string; at: number | string; tag: string }[]>;
+  tags: Record<
+    string,
+    Array<{ target: string; at: number | string; tag: string }>
+  >;
   vars: Record<string, VarValue>;
 };
 
