@@ -14,5 +14,5 @@ RUN useradd --create-home --shell /bin/bash agent
 USER agent
 WORKDIR /home/agent
 
-RUN git config --global user.name "factory[bot]" \
- && git config --global user.email "factory@users.noreply.github.com"
+RUN git config --global user.name "bellcd-factory[bot]" \
+ && git config --global user.email "360378121+bellcd-factory[bot]@users.noreply.github.com"
