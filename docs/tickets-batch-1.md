@@ -17,9 +17,9 @@ Specs for F1, F2 and the first 10 algorithm tickets, written 2026-11-22. They fo
   - `engines` pins Node 24, and `.nvmrc` matches it.
 - **No undeclared imports.** ESLint's `import/no-extraneous-dependencies` rule fails any import of a package that isn't in `package.json`. This replaces the guard pnpm's strict layout would have given.
 - Vitest, fast-check, Stryker (`@stryker-mutator/vitest-runner`).
-- A GitHub Actions workflow on PRs that runs typecheck, lint and test. It also runs Stryker on changed files under `src/algorithms/`, with `break` set to 80.
+- A GitHub Actions workflow on PRs that runs typecheck, format check (`prettier --check`), lint and test. It also runs Stryker on changed files under `src/algorithms/`, with `break` set to 80.
   - A new push to a PR cancels the checks still running on its old commit (`concurrency` with `cancel-in-progress`).
-  - A PR that changes only docs or markdown skips the workflow (`paths-ignore`).
+  - A PR that changes only docs or markdown skips the jobs, not the workflow. A first job works out what changed, and the others run only when code did. Every PR still gets a finished check result, which the factory waits on before it reviews.
 
 **Types and core** (`src/trace/`)
 - The `Trace`, `Step`, `Structure`, `Marks` and `Operation` types, exactly as in trace-format.md. Only `array` is implemented. The other structure kinds are declared but unused.
