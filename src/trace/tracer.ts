@@ -107,12 +107,10 @@ export class Tracer {
     this.#push({ op: 'init' }, false);
   }
 
-  /** @internal */
   freshId(): number {
     return this.#nextId++;
   }
 
-  /** @internal */
   arrayOf(name: string): ArrayStructure {
     const structure = this.#state[name];
     if (structure === undefined || structure.kind !== 'array') {
@@ -121,7 +119,6 @@ export class Tracer {
     return structure;
   }
 
-  /** @internal */
   itemAt(name: string, i: number) {
     const items = this.arrayOf(name).items;
     const item = Number.isInteger(i) ? items[i] : undefined;
@@ -138,7 +135,6 @@ export class Tracer {
     return new ArrayHandle(this, name);
   }
 
-  /** @internal */
   record(operation: Operation): void {
     if (operation.op === 'compare' || operation.op === 'compareValue') {
       this.#stats.compares++;
@@ -252,7 +248,6 @@ export class Tracer {
     this.#depth--;
   }
 
-  /** @internal */
   finish(): { steps: Step[]; stats: Record<string, number> } {
     this.#push({ op: 'done' }, false);
     return { steps: this.#steps, stats: { ...this.#stats } };
