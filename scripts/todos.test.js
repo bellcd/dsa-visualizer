@@ -45,7 +45,7 @@ test("sorts by path, then by line", () => {
 
 test("ignores lines without a TODO or FIXME comment", () => {
   const { lines } = run({
-    "a.ts": 'const todo = "TODO";\n// nothing here\n// TODOS are not markers\n',
+    "a.ts": "const todo = 'TODO';\n// nothing here\n// TODOS are not markers\n",
   });
   assert.deepEqual(lines, []);
 });
@@ -54,4 +54,20 @@ test("prints nothing and succeeds when there are no files", () => {
   const { status, lines } = run({});
   assert.equal(status, 0);
   assert.deepEqual(lines, []);
+});
+
+test("finds markers on continuation lines of a block comment", () => {
+  const { dir, lines } = run({
+    "a.ts": "/**\n * Intro.\n * TODO: wrapped\n */\n",
+  });
+  assert.deepEqual(lines, [`${join(dir, "a.ts")}:3: TODO: wrapped`]);
+});
+
+test("scans ./src when no argument is given", () => {
+  const cwd = mkdtempSync(join(tmpdir(), "todos-cwd-"));
+  mkdirSync(join(cwd, "src"));
+  writeFileSync(join(cwd, "src", "a.ts"), "// TODO: default\n");
+  const result = spawnSync("node", [script], { cwd, encoding: "utf8" });
+  assert.equal(result.status, 0);
+  assert.equal(result.stdout, `${join("src", "a.ts")}:1: TODO: default\n`);
 });
