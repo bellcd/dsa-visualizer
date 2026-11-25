@@ -1,37 +1,40 @@
-import assert from "node:assert/strict";
-import { spawnSync } from "node:child_process";
-import { copyFileSync, chmodSync, mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
-import { join } from "node:path";
-import { test } from "node:test";
+import assert from 'node:assert/strict';
+import { spawnSync } from 'node:child_process';
+import { copyFileSync, chmodSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { test } from 'node:test';
 
-const script = new URL("./node-version.sh", import.meta.url).pathname;
+const script = new URL('./node-version.sh', import.meta.url).pathname;
+const repoNvmrc = new URL('../.nvmrc', import.meta.url).pathname;
 
-// Copies the script into a scratch repo so .nvmrc can be present or absent.
+// NOTE: the script finds .nvmrc relative to itself, so it is copied to control whether one exists.
 function scratchRepo(nvmrc) {
-  const root = mkdtempSync(join(tmpdir(), "node-version-"));
-  mkdirSync(join(root, "scripts"));
-  const copy = join(root, "scripts", "node-version.sh");
+  const root = mkdtempSync(join(tmpdir(), 'node-version-'));
+  mkdirSync(join(root, 'scripts'));
+  const copy = join(root, 'scripts', 'node-version.sh');
   copyFileSync(script, copy);
   chmodSync(copy, 0o755);
-  if (nvmrc !== undefined) writeFileSync(join(root, ".nvmrc"), nvmrc);
+  if (nvmrc !== undefined) writeFileSync(join(root, '.nvmrc'), nvmrc);
   return copy;
 }
 
-test("prints the version from .nvmrc", () => {
-  const result = spawnSync(scratchRepo("24\n"), { encoding: "utf8" });
+test('node-version.sh prints the version from .nvmrc', () => {
+  const result = spawnSync(scratchRepo('24\n'), { encoding: 'utf8' });
   assert.equal(result.status, 0);
-  assert.equal(result.stdout, "24\n");
+  assert.equal(result.stdout, '24\n');
 });
 
-test("exits non-zero when .nvmrc is missing", () => {
-  const result = spawnSync(scratchRepo(undefined), { encoding: "utf8" });
+test('node-version.sh exits non-zero when .nvmrc is missing', () => {
+  const result = spawnSync(scratchRepo(undefined), { encoding: 'utf8' });
   assert.notEqual(result.status, 0);
-  assert.equal(result.stdout, "");
+  assert.equal(result.stdout, '');
 });
 
-test("prints this repo's version", () => {
-  const result = spawnSync(script, { encoding: "utf8" });
+test("node-version.sh prints this repo's .nvmrc version", () => {
+  const result = spawnSync(script, { encoding: 'utf8' });
+  const expected = readFileSync(repoNvmrc, 'utf8');
+  const actual = result.stdout;
   assert.equal(result.status, 0);
-  assert.match(result.stdout, /^\d/);
+  assert.equal(actual, expected);
 });

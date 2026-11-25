@@ -1,5 +1,4 @@
 #!/usr/bin/env bash
-# Prints the Node version the repo requires, read from .nvmrc.
 set -euo pipefail
 
 nvmrc="$(dirname "${BASH_SOURCE[0]}")/../.nvmrc"
