@@ -1,6 +1,6 @@
 # The factory's sandbox image for this repo. The factory builds a Daytona
 # snapshot from this file; each run clones the repo into it and runs Claude Code.
-FROM node:22.22.1-bookworm-slim
+FROM node:24.22.3-bookworm-slim
 
 RUN apt-get update \
  && apt-get install -y --no-install-recommends git ca-certificates jq \
