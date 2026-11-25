@@ -1,0 +1,73 @@
+name: CI
+
+on:
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      code: ${{ steps.diff.outputs.code }}
+      algorithms: ${{ steps.diff.outputs.algorithms }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+      - id: diff
+        env:
+          BASE: ${{ github.event.pull_request.base.sha }}
+        run: |
+          files=$(git diff --name-only --diff-filter=d "$BASE" HEAD)
+          if grep -qvE '(^docs/|\.md$)' <<<"$files"; then echo code=true >> "$GITHUB_OUTPUT"; else echo code=false >> "$GITHUB_OUTPUT"; fi
+          algorithms=$(grep -E '^src/algorithms/.*\.ts$' <<<"$files" | grep -v '\.test\.ts$' | paste -sd, - || true)
+          echo "algorithms=$algorithms" >> "$GITHUB_OUTPUT"
+
+  checks:
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        script: [typecheck, check, check-exact-deps, test]
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - run: npm run ${{ matrix.script }}
+
+  stryker:
+    needs: changes
+    if: needs.changes.outputs.algorithms != ''
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - env:
+          FILES: ${{ needs.changes.outputs.algorithms }}
+        run: npx stryker run --mutate "$FILES"
+
+  result:
+    needs: [changes, checks, stryker]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - env:
+          RESULTS: ${{ join(needs.*.result, ' ') }}
+        run: |
+          echo "$RESULTS"
+          if grep -qE 'failure|cancelled' <<<"$RESULTS"; then exit 1; fi

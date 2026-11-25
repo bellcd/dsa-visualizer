@@ -19,3 +19,4 @@ coverage/
 # Stryker sandbox and reports
 .stryker-tmp/
 reports/
+stryker-setup-*.js

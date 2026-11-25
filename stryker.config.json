@@ -3,5 +3,6 @@
   "testRunner": "vitest",
   "plugins": ["@stryker-mutator/vitest-runner"],
   "mutate": ["src/algorithms/**/*.ts", "!src/algorithms/**/*.test.ts"],
-  "thresholds": { "high": 90, "low": 85, "break": 80 }
+  "thresholds": { "high": 90, "low": 85, "break": 80 },
+  "inPlace": true
 }
