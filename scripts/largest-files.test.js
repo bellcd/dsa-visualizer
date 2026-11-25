@@ -50,5 +50,5 @@ test("exits non-zero when src/ is missing", () => {
   spawnSync("git", ["init", "-q"], { cwd: dir });
   const result = run(dir);
   assert.notEqual(result.status, 0);
-  assert.match(result.stderr, /src\//);
+  assert.equal(result.stderr, "largest-files: src/ not found\n");
 });

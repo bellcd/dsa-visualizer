@@ -1,6 +1,5 @@
 #!/usr/bin/env bash
-# Print the 10 largest tracked files under src/, largest first, as "size path".
-# Size is in bytes. Run from the repository root.
+# NOTE: Run from the repository root; paths are relative to the working directory.
 set -euo pipefail
 
 if [[ ! -d src ]]; then
