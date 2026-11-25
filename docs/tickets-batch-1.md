@@ -18,6 +18,8 @@ Specs for F1, F2 and the first 10 algorithm tickets, written 2026-11-22. They fo
 - **No undeclared imports.** ESLint's `import/no-extraneous-dependencies` rule fails any import of a package that isn't in `package.json`. This replaces the guard pnpm's strict layout would have given.
 - Vitest, fast-check, Stryker (`@stryker-mutator/vitest-runner`).
 - A GitHub Actions workflow on PRs that runs typecheck, lint and test. It also runs Stryker on changed files under `src/algorithms/`, with `break` set to 80.
+  - A new push to a PR cancels the checks still running on its old commit (`concurrency` with `cancel-in-progress`).
+  - A PR that changes only docs or markdown skips the workflow (`paths-ignore`).
 - `CLAUDE.md` gains a Commands section: typecheck, lint, test and mutation test, one line each.
 
 **Types and core** (`src/trace/`)
