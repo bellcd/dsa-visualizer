@@ -20,7 +20,7 @@ function repo(files, { track = true } = {}) {
 
 const run = (cwd) => spawnSync('bash', [script], { cwd, encoding: 'utf8' });
 
-test('prints path: count, sorted, skipping files without TODO', () => {
+test('count-todos.sh prints path: count, sorted, skipping files without TODO', () => {
   const dir = repo({
     'src/b.ts': '// TODO one\n// TODO two\n',
     'src/a/z.ts': '// TODO\n',
@@ -31,31 +31,36 @@ test('prints path: count, sorted, skipping files without TODO', () => {
   assert.equal(result.stdout, 'src/a/z.ts: 1\nsrc/b.ts: 2\n');
 });
 
-test('ignores files outside src/', () => {
+test('count-todos.sh ignores files outside src/', () => {
   const dir = repo({ 'src/a.ts': 'TODO\n', 'docs/x.md': 'TODO\n' });
   assert.equal(run(dir).stdout, 'src/a.ts: 1\n');
 });
 
-test('skips untracked and ignored files', () => {
+test('count-todos.sh skips untracked and ignored files', () => {
   const dir = repo({ 'src/a.ts': 'TODO\n', '.gitignore': 'src/ignored.ts\n' });
   writeFileSync(join(dir, 'src/ignored.ts'), 'TODO\n');
   writeFileSync(join(dir, 'src/untracked.ts'), 'TODO\n');
   assert.equal(run(dir).stdout, 'src/a.ts: 1\n');
 });
 
-test('handles spaces in file names', () => {
+test('count-todos.sh handles spaces in file names', () => {
   const dir = repo({ 'src/my file.ts': 'TODO\n' });
   assert.equal(run(dir).stdout, 'src/my file.ts: 1\n');
 });
 
-test('prints nothing when no file has a TODO', () => {
+test('count-todos.sh prints nothing when no file has a TODO', () => {
   const result = run(repo({ 'src/a.ts': 'ok\n' }));
   assert.equal(result.status, 0);
   assert.equal(result.stdout, '');
 });
 
-test('exits non-zero when src/ is missing', () => {
+test('count-todos.sh exits non-zero when src/ is missing', () => {
   const result = run(repo({ 'README.md': 'TODO\n' }));
   assert.notEqual(result.status, 0);
   assert.equal(result.stderr, 'count-todos: src/ not found\n');
+});
+
+test('count-todos.sh lists src/a before src/a b', () => {
+  const dir = repo({ 'src/a b': 'TODO\n', 'src/a': 'TODO\n' });
+  assert.equal(run(dir).stdout, 'src/a: 1\nsrc/a b: 1\n');
 });

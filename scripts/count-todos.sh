@@ -15,4 +15,4 @@ git ls-files -z -- src | while IFS= read -r -d '' file; do
   if [[ $count -gt 0 ]]; then
     printf '%s: %s\n' "$file" "$count"
   fi
-done | LC_ALL=C sort
+done
