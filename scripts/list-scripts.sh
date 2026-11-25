@@ -1,5 +1,4 @@
 #!/usr/bin/env bash
-# Prints each npm script in package.json as "name: command", sorted by name.
 # Usage: scripts/list-scripts.sh [path/to/package.json]
 set -euo pipefail
 
