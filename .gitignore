@@ -15,3 +15,7 @@ coverage/
 .DS_Store
 .vscode/
 .idea/
+
+# Stryker
+.stryker-tmp/
+reports/
