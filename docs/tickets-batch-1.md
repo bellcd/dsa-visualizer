@@ -4,22 +4,41 @@ Specs for F1, F2 and the first 10 algorithm tickets, written 2026-11-22. They fo
 
 ---
 
-## F1: Trace core and test contract (M)
+F1 is split into four tickets. F1a, the npm and TypeScript scaffold, is done.
 
-**Goal:** everything an algorithm ticket needs, so that each later ticket is two files plus a registry line.
+## F1b: Tooling and CI (S)
 
-**Scaffold**
-- npm, Node 24 LTS, TypeScript `strict`, ESLint and Prettier.
-- **Exact versions only.**
-  - `.npmrc` sets `save-exact=true`, and every version in `package.json` is an exact `x.y.z`: no `^`, no `~`, no ranges and no tags.
-  - `package-lock.json` is committed, and CI installs with `npm ci`.
-  - A CI check (`scripts/check-exact-deps`) fails the PR if any dependency in `package.json` isn't an exact version.
-  - `engines` pins Node 24, and `.nvmrc` matches it.
-- **No undeclared imports.** ESLint's `import/no-extraneous-dependencies` rule fails any import of a package that isn't in `package.json`. This replaces the guard pnpm's strict layout would have given.
-- Vitest, fast-check, Stryker (`@stryker-mutator/vitest-runner`).
-- A GitHub Actions workflow on PRs that runs typecheck, format check (`prettier --check`), lint and test. It also runs Stryker on changed files under `src/algorithms/`, with `break` set to 80.
-  - A new push to a PR cancels the checks still running on its old commit (`concurrency` with `cancel-in-progress`).
-  - A PR that changes only docs or markdown skips the jobs, not the workflow. A first job works out what changed, and the others run only when code did. Every PR still gets a finished check result, which the factory waits on before it reviews.
+**Goal:** the checks every later ticket runs against.
+
+**Already in the repo:** TypeScript 7, `strict`, `.npmrc` with `save-exact=true`, `.nvmrc`, `engines` and `scripts/check-exact-deps`. Keep them.
+
+**Add**
+- Biome 2.6.6 for both linting and formatting, with one `biome.json`.
+  - The recommended rules, plus `noUndeclaredDependencies` as an error. That rule fails any import of a package that isn't in `package.json`.
+  - Scripts: `lint` runs `biome lint`, `format` runs `biome format --write`, and `check` runs `biome ci`.
+- Vitest 5.1.0, fast-check 4.10.2, and Stryker 10.1.1 (`@stryker-mutator/core` and `@stryker-mutator/vitest-runner`).
+  - A `stryker.config.json` with the Vitest runner and `break` set to 80. Leave out the TypeScript checker plugin.
+- Turn on `verbatimModuleSyntax` and `erasableSyntaxOnly` in `tsconfig.json`.
+- One placeholder Vitest test, so `npm test` has something to run. Move the `check-exact-deps` tests to Vitest.
+
+**CI** (`.github/workflows/ci.yml`, on pull requests)
+- A first job works out whether code changed. A PR that changes only docs or markdown skips the other jobs, but every PR still gets a finished check result.
+- Jobs: typecheck, `biome ci`, the exact-versions check, and `npm test`. Install with `npm ci`.
+- A Stryker job that runs on changed files under `src/algorithms/` only, and is skipped when there are none.
+- A new push to a PR cancels the checks still running on its old commit (`concurrency` with `cancel-in-progress`).
+
+**Accepted when**
+- CI is green on the PR.
+- A PR that adds an import of an undeclared package fails `biome ci`. Show this in the PR evidence.
+- A PR that adds a `^` version fails the exact-versions check.
+
+---
+
+## F1c: Trace core and tracer (M)
+
+**Depends on:** F1b.
+
+**Goal:** the types, tracer and registry an algorithm is written against. Everything here follows `docs/trace-format.md`.
 
 **Types and core** (`src/trace/`)
 - The `Trace`, `Step`, `Structure`, `Marks` and `Operation` types, exactly as in trace-format.md. Only `array` is implemented. The other structure kinds are declared but unused.
@@ -50,6 +69,19 @@ Specs for F1, F2 and the first 10 algorithm tickets, written 2026-11-22. They fo
 - An ordered list of defs.
 - A fixtures group holds `demo-swap`, a 5-item array that does compares, swaps, every mark type, a note and `depth`. The menu hides that group unless `?fixtures` is in the URL.
 
+**Accepted when**
+- Each tracer rule above has its own Vitest test, through `trace()`.
+- The Stryker score on `src/trace/` is at least 80%.
+- CI is green on the PR.
+
+---
+
+## F1d: Test contract and consistency checker (M)
+
+**Depends on:** F1c.
+
+**Goal:** the one call each algorithm test makes, so that each later ticket is two files plus a registry line.
+
 **Test contract** (`test/contract.ts`)
 - Each algorithm test calls `algorithmContract(def, spec)` once. `spec` has these fields:
   - `arbitrary` (a fast-check input generator);
@@ -59,26 +91,26 @@ Specs for F1, F2 and the first 10 algorithm tickets, written 2026-11-22. They fo
   - `examples` (edge-case inputs that are always run);
   - `pinned` (`{ input, stats, result? }` exact snapshots).
 - It generates tests for contract items 1–4 in trace-format.md, with 200 fast-check runs.
-- **Consistency checker** (contract item 2), `checkConsistency(trace)`:
-  - applying each operation to the previous state reproduces the next snapshot;
-  - ids are unique within each structure (a permutation when no `set` happened);
-  - marks are within bounds;
-  - the trace round-trips through JSON;
-  - `init` comes first and `done` last;
-  - the `stats` match the counted operations.
 - Generators: `numberArrays({ min: 0, max: 64, lo: -99, hi: 99 })` and `sortedNumberArrays(...)`.
+
+**Consistency checker** (contract item 2), `checkConsistency(trace)`:
+- applying each operation to the previous state reproduces the next snapshot;
+- ids are unique within each structure (a permutation when no `set` happened);
+- marks are within bounds;
+- the trace round-trips through JSON;
+- `init` comes first and `done` last;
+- the `stats` match the counted operations.
 
 **Accepted when**
 - `demo-swap` passes `algorithmContract`.
 - The consistency checker catches each case in a set of hand-broken traces: a wrong snapshot, a duplicate id, an out-of-bounds mark, a missing `done`, and wrong `stats`. Each is its own test.
-- The Stryker score on `src/trace/` is at least 80%.
 - CI is green on the PR.
 
 ---
 
 ## F2: Renderer and player (M)
 
-**Depends on:** F1.
+**Depends on:** F1d.
 
 **App:** Vite plus React. It deploys to GitHub Pages from `main`.
 
@@ -122,7 +154,7 @@ Specs for F1, F2 and the first 10 algorithm tickets, written 2026-11-22. They fo
 
 ## Rules for every algorithm ticket (1–10)
 
-- **Depends on:** F1 and F2.
+- **Depends on:** F1d and F2.
 - **Files:**
   - `src/algorithms/<id>.ts`, which exports the def;
   - `src/algorithms/<id>.test.ts`, which calls `algorithmContract`;
