@@ -23,7 +23,8 @@ export const demoSwapDef: AlgorithmDef<Input, number[]> = {
     t.line(0);
     t.pointer('i', 'a', 0);
     t.pointer('j', 'a', 1);
-    t.setVar('held', input.values[2] ?? 0);
+    const held = input.values[2] ?? 0;
+    t.setVar('held', held);
     t.note('compare the first two');
     const first = a.compare(0, 1);
     t.line(1);
@@ -32,7 +33,7 @@ export const demoSwapDef: AlgorithmDef<Input, number[]> = {
     t.range('sorted', 'a', 0, 2);
     t.tag('a', 4, 'visited');
     t.line(2);
-    a.compareValue(2, a.get(0));
+    a.compareValue(2, held);
     t.untag('a', 4, 'visited');
     t.pointer('j', 'a', null);
     t.step();

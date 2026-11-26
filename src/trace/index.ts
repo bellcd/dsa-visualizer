@@ -1,6 +1,6 @@
 export { InputError, TraceLimitExceeded } from './errors.js';
 export { type AlgorithmDef, trace } from './trace.js';
-export { type ArrayHandle, MAX_STEPS, type Tracer } from './tracer.js';
+export { type ArrayHandle, type ArrayTracer, MAX_STEPS } from './tracer.js';
 export type {
   InputField,
   Item,

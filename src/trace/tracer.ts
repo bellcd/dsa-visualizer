@@ -85,6 +85,23 @@ export class ArrayHandle {
   }
 }
 
+export type ArrayTracer = Pick<
+  Tracer,
+  | 'rng'
+  | 'array'
+  | 'pointer'
+  | 'range'
+  | 'clearRange'
+  | 'tag'
+  | 'untag'
+  | 'setVar'
+  | 'line'
+  | 'note'
+  | 'step'
+  | 'enter'
+  | 'exit'
+>;
+
 export class Tracer {
   readonly rng: () => number;
   readonly #state: Record<string, Structure> = {};
@@ -177,6 +194,7 @@ export class Tracer {
 
   pointer(name: string, target: string, at: number | string | null): void {
     if (at === null) {
+      this.arrayOf(target);
       delete this.#marks.pointers[name];
       return;
     }
@@ -214,6 +232,7 @@ export class Tracer {
   }
 
   untag(target: string, at: number | string, tag: string): void {
+    this.arrayOf(target);
     const list = this.#marks.tags[tag];
     if (list === undefined) return;
     const kept = list.filter(

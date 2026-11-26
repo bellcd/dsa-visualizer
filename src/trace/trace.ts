@@ -1,4 +1,4 @@
-import { Tracer } from './tracer.js';
+import { type ArrayTracer, Tracer } from './tracer.js';
 import type { InputField, Trace } from './types.js';
 
 export type AlgorithmDef<
@@ -11,7 +11,7 @@ export type AlgorithmDef<
   inputFields: InputField[];
   validate(input: I): void;
   setup(input: I): Record<string, number[]>;
-  run(t: Tracer, input: I): R;
+  run(t: ArrayTracer, input: I): R;
 };
 
 export function trace<I extends Record<string, unknown>, R>(

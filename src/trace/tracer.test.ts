@@ -1,17 +1,17 @@
 import { describe, expect, test } from 'vitest';
 import {
   type AlgorithmDef,
+  type ArrayTracer,
   InputError,
   MAX_STEPS,
   TraceLimitExceeded,
-  type Tracer,
   trace,
 } from './index.js';
 
 type Input = { values: number[] };
 
 function def(
-  run: (t: Tracer, input: Input) => unknown,
+  run: (t: ArrayTracer, input: Input) => unknown,
   extra: Partial<AlgorithmDef<Input, unknown>> = {},
 ): AlgorithmDef<Input, unknown> {
   return {
@@ -26,10 +26,13 @@ function def(
   };
 }
 
-const run = (values: number[], fn: (t: Tracer) => unknown, seed?: number) =>
-  trace(def(fn), { values }, seed);
+const run = (
+  values: number[],
+  fn: (t: ArrayTracer) => unknown,
+  seed?: number,
+) => trace(def(fn), { values }, seed);
 
-const ops = (values: number[], fn: (t: Tracer) => unknown) =>
+const ops = (values: number[], fn: (t: ArrayTracer) => unknown) =>
   run(values, fn).steps.map((s) => s.operation.op);
 
 describe('trace()', () => {
@@ -595,6 +598,11 @@ describe('errors', () => {
     expect(() => run([1], (t) => t.tag('nope', 0, 't'))).toThrow('nope');
   });
 
+  test('clearing a pointer or a tag on an unknown structure throws', () => {
+    expect(() => run([1], (t) => t.pointer('i', 'nope', null))).toThrow('nope');
+    expect(() => run([1], (t) => t.untag('nope', 0, 't'))).toThrow('nope');
+  });
+
   test('a mark out of bounds throws', () => {
     expect(() => run([1, 2], (t) => t.pointer('i', 'a', 2))).toThrow(
       RangeError,
@@ -635,7 +643,6 @@ describe('errors', () => {
         }),
         { values: [] },
       );
-    // init and done count toward the limit.
     expect(steps(MAX_STEPS - 2).steps).toHaveLength(MAX_STEPS);
     expect(() => steps(MAX_STEPS - 1)).toThrow(TraceLimitExceeded);
     expect(() => steps(MAX_STEPS * 2)).toThrow(TraceLimitExceeded);

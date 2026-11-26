@@ -5,7 +5,8 @@
   "mutate": [
     "src/trace/**/*.ts",
     "src/algorithms/**/*.ts",
-    "!src/**/*.test.ts"
+    "!src/**/*.test.ts",
+    "!src/algorithms/fixtures/**"
   ],
   "thresholds": { "high": 90, "low": 85, "break": 80 },
   "inPlace": true

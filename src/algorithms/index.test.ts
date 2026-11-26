@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import { InputError, type Operation, trace } from '../trace/index.js';
+import { InputError, trace } from '../trace/index.js';
 import { demoSwapDef } from './fixtures/demo-swap.js';
 import { menuGroups, registry, showFixtures } from './index.js';
 
@@ -37,7 +37,7 @@ describe('demo-swap', () => {
   const tr = trace(demoSwapDef, { values: [5, 1, 4, 2, 3] });
 
   test('demo-swap does compares, a swap, a compareValue, a set and a mark step', () => {
-    const ops = tr.steps.map((s: { operation: Operation }) => s.operation.op);
+    const ops = tr.steps.map((s) => s.operation.op);
     expect(ops).toEqual([
       'init',
       'compare',
@@ -51,25 +51,58 @@ describe('demo-swap', () => {
     expect(tr.result).toEqual([1, 5, 4, 2, 4]);
   });
 
-  test('demo-swap uses every mark type, a note and depth', () => {
-    const [, cmp, , , mark] = tr.steps;
-    expect(cmp?.note).toBe('compare the first two');
-    expect(cmp?.marks.pointers).toEqual({
+  test('demo-swap attaches its note to the first compare step only', () => {
+    expect(tr.steps[1]?.note).toBe('compare the first two');
+    expect(tr.steps.filter((s) => s.note !== undefined)).toHaveLength(1);
+  });
+
+  test('demo-swap marks two pointers and clears one of them', () => {
+    expect(tr.steps[1]?.marks.pointers).toEqual({
       i: { target: 'a', at: 0 },
       j: { target: 'a', at: 1 },
     });
-    expect(cmp?.marks.vars).toEqual({ held: 4 });
+    expect(tr.steps[4]?.marks.pointers).toEqual({ i: { target: 'a', at: 0 } });
+  });
+
+  test('demo-swap holds the third value in a var', () => {
+    expect(tr.steps[1]?.marks.vars).toEqual({ held: 4 });
+  });
+
+  test('demo-swap marks a sorted range', () => {
     expect(tr.steps[3]?.marks.ranges).toEqual({
       sorted: { target: 'a', from: 0, to: 2 },
     });
+  });
+
+  test('demo-swap tags a spot and then removes the tag', () => {
     expect(tr.steps[3]?.marks.tags).toEqual({
       visited: [{ target: 'a', at: 4, tag: 'visited' }],
     });
-    expect(tr.steps[3]?.depth).toBe(1);
-    expect(mark?.marks.tags).toEqual({});
-    expect(mark?.marks.pointers).toEqual({ i: { target: 'a', at: 0 } });
-    expect(tr.steps[5]?.depth).toBeUndefined();
+    expect(tr.steps[4]?.marks.tags).toEqual({});
+  });
+
+  test('demo-swap is one level deep from the compareValue until the exit', () => {
+    expect(tr.steps.map((s) => s.depth)).toEqual([
+      undefined,
+      undefined,
+      undefined,
+      1,
+      1,
+      undefined,
+      undefined,
+    ]);
+  });
+
+  test('demo-swap moves the pseudocode line as it goes', () => {
     expect(tr.steps.map((s) => s.line)).toEqual([undefined, 0, 1, 2, 2, 3, 3]);
+  });
+
+  test('demo-swap compares a[2] with the held value', () => {
+    expect(tr.steps[3]?.operation).toMatchObject({
+      op: 'compareValue',
+      i: 2,
+      value: 4,
+    });
   });
 
   test('demo-swap skips the swap when already ordered', () => {
