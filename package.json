@@ -12,7 +12,7 @@
     "lint:strict": "biome lint",
     "lint:all": "biome lint --config-path=lint-all",
     "format": "biome format --write",
-    "check": "npm run lint:strict && biome ci && npm run check-comments",
+    "check": "biome ci && npm run check-comments",
     "test": "vitest run",
     "check-comments": "node scripts/check-comments.js",
     "prepare": "husky || true"
