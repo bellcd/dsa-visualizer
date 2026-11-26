@@ -13,7 +13,7 @@ algorithmContract(demoSwapDef, {
     expect(result).toEqual(a > b ? [b, a, c, d, c] : [a, b, c, d, c]);
   },
   guarantee(step, { input }) {
-    // Only a `set` changes the multiset of values.
+    // NOTE: `set` rewrites values and `done` is not a swap, so neither keeps the multiset.
     const a = step.state.a;
     if (a?.kind !== 'array') throw new Error('expected array a');
     if (step.operation.op === 'set' || step.operation.op === 'done') return;

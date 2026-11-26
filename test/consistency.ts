@@ -1,10 +1,4 @@
-import type {
-  Item,
-  State,
-  Step,
-  Structure,
-  Trace,
-} from '../src/trace/index.js';
+import type { Item, State, Step, Trace } from '../src/trace/index.js';
 
 const sign = (n: number): -1 | 0 | 1 => {
   if (n < 0) return -1;
@@ -26,7 +20,7 @@ function applyOperation(
   seen: Map<string, Set<number>>,
   problems: string[],
   at: string,
-): Record<string, Structure> {
+): State {
   const expected = structuredClone(prev.state);
   const op = next.operation;
   if (op.op === 'init') {
@@ -144,7 +138,6 @@ function sortedIds(state: State): Record<string, number[]> {
   return out;
 }
 
-/** Returns every consistency problem found in the trace (empty when sound). */
 export function checkConsistency(trace: Trace): string[] {
   const problems: string[] = [];
   const { steps } = trace;

@@ -12,7 +12,6 @@ const RUNS = 200;
 
 type Range = { min: number; max: number; lo: number; hi: number };
 
-/** Arrays of `min`..`max` integers in `lo`..`hi`. */
 export function numberArrays({
   min,
   max,
