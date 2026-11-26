@@ -24,11 +24,7 @@ export function unknownArrayMessage(target: string): string {
   return `Unknown array structure '${target}'`;
 }
 
-export function indexMessage(
-  length: number,
-  i: number,
-  target: string,
-): string {
+function indexMessage(length: number, i: number, target: string): string {
   return `Index ${i} is out of bounds for '${target}' (length ${length})`;
 }
 
