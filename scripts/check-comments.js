@@ -32,7 +32,11 @@ function findComments(source) {
     } else if (c === '/' && next === '*') {
       let end = source.indexOf('*/', i + 2);
       end = end === -1 ? source.length : end + 2;
-      found.push({ line, text: source.slice(i + 2, end - 2) });
+      found.push({
+        line,
+        text: source.slice(i + 2, end - 2),
+        jsdoc: source[i + 2] === '*' && end - i > 4,
+      });
       advance(end);
     } else if (c === '"' || c === "'") {
       let j = i + 1;
@@ -87,7 +91,8 @@ function findComments(source) {
 
 export function violations(source) {
   return findComments(source).filter(
-    ({ text }) => !text.replace(/^[\s*]+/, '').startsWith('NOTE:'),
+    ({ text, jsdoc }) =>
+      !jsdoc && !text.replace(/^[\s*]+/, '').startsWith('NOTE:'),
   );
 }
 

@@ -19,12 +19,13 @@ test('a restating line comment fails with its line number', () => {
   ]);
 });
 
-test('block and JSDoc comments need NOTE: too', () => {
-  expect(
-    violations('/* NOTE: ok */\n/** NOTE: ok */\n/**\n * NOTE: ok\n */'),
-  ).toEqual([]);
+test('block comments need NOTE:', () => {
+  expect(violations('/* NOTE: ok */')).toEqual([]);
   expect(violations('/* nope */')).toHaveLength(1);
-  expect(violations('/** nope */')).toHaveLength(1);
+});
+
+test('JSDoc blocks pass without NOTE:', () => {
+  expect(violations('/** Throws when x. */\n/**\n * Multi.\n */')).toEqual([]);
 });
 
 test('comment markers inside strings, templates and regexes are ignored', () => {
