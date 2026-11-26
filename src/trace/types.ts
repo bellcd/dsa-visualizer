@@ -51,22 +51,24 @@ export type Operation =
   | { op: 'mark' }
   | { op: 'done' };
 
+export type State = Record<string, Structure>;
+
 export type Step = {
   operation: Operation;
-  state: Record<string, Structure>;
+  state: State;
   marks: Marks;
   line?: number;
   note?: string;
   depth?: number;
 };
 
-export type Trace = {
+export type Trace<R = unknown> = {
   version: 1;
   algorithm: { id: string; name: string; pseudocode: string[] };
   input: Record<string, unknown>;
   seed?: number;
   steps: Step[];
-  result: unknown;
+  result: R;
   stats: Record<string, number>;
 };
 

@@ -18,12 +18,12 @@ export function trace<I extends Record<string, unknown>, R>(
   def: AlgorithmDef<I, R>,
   input: I,
   seed?: number,
-): Trace {
+): Trace<R> {
   def.validate(input);
   const t = new Tracer(def.setup(input), seed);
   const result = def.run(t, input);
   const { steps, stats } = t.finish();
-  const out: Trace = {
+  const out: Trace<R> = {
     version: 1,
     algorithm: {
       id: def.id,
