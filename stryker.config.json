@@ -2,7 +2,12 @@
   "$schema": "./node_modules/@stryker-mutator/core/schema/stryker-schema.json",
   "testRunner": "vitest",
   "plugins": ["@stryker-mutator/vitest-runner"],
-  "mutate": ["src/algorithms/**/*.ts", "!src/algorithms/**/*.test.ts"],
+  "mutate": [
+    "src/trace/**/*.ts",
+    "src/algorithms/**/*.ts",
+    "!src/**/*.test.ts",
+    "!src/algorithms/fixtures/**"
+  ],
   "thresholds": { "high": 90, "low": 85, "break": 80 },
   "inPlace": true
 }
