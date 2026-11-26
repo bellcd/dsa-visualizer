@@ -246,11 +246,15 @@ describe('bounds rules', () => {
   });
 
   test('slotProblem rejects negative indices', () => {
-    expect(slotProblem(3, -1, 'a')).toBeDefined();
+    expect(slotProblem(3, -1, 'a')).toBe(
+      "Index -1 is out of bounds for 'a' (length 3)",
+    );
   });
 
   test('slotProblem rejects fractional indices', () => {
-    expect(slotProblem(3, 1.5, 'a')).toBeDefined();
+    expect(slotProblem(3, 1.5, 'a')).toBe(
+      "Index 1.5 is out of bounds for 'a' (length 3)",
+    );
   });
 
   test('positionProblem accepts an in-range position', () => {
@@ -270,11 +274,15 @@ describe('bounds rules', () => {
   });
 
   test('positionProblem rejects negative positions', () => {
-    expect(positionProblem(state(), 'a', -1)).toBeDefined();
+    expect(positionProblem(state(), 'a', -1)).toBe(
+      "Mark position -1 is out of bounds for 'a' (length 3)",
+    );
   });
 
   test('positionProblem rejects fractional positions', () => {
-    expect(positionProblem(state(), 'a', 0.5)).toBeDefined();
+    expect(positionProblem(state(), 'a', 0.5)).toBe(
+      "Mark position 0.5 is out of bounds for 'a' (length 3)",
+    );
   });
 
   test('positionProblem reports an unknown array', () => {
@@ -298,19 +306,27 @@ describe('bounds rules', () => {
   });
 
   test('rangeProblem rejects a negative start', () => {
-    expect(rangeProblem(state(), 'a', -1, 2)).toBeDefined();
+    expect(rangeProblem(state(), 'a', -1, 2)).toBe(
+      "Range [-1, 2) is out of bounds for 'a' (length 3)",
+    );
   });
 
   test('rangeProblem rejects a start after the end', () => {
-    expect(rangeProblem(state(), 'a', 2, 1)).toBeDefined();
+    expect(rangeProblem(state(), 'a', 2, 1)).toBe(
+      "Range [2, 1) is out of bounds for 'a' (length 3)",
+    );
   });
 
   test('rangeProblem rejects a fractional start', () => {
-    expect(rangeProblem(state(), 'a', 0.5, 2)).toBeDefined();
+    expect(rangeProblem(state(), 'a', 0.5, 2)).toBe(
+      "Range [0.5, 2) is out of bounds for 'a' (length 3)",
+    );
   });
 
   test('rangeProblem rejects a fractional end', () => {
-    expect(rangeProblem(state(), 'a', 0, 1.5)).toBeDefined();
+    expect(rangeProblem(state(), 'a', 0, 1.5)).toBe(
+      "Range [0, 1.5) is out of bounds for 'a' (length 3)",
+    );
   });
 
   test('rangeProblem reports an unknown array', () => {

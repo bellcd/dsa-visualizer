@@ -20,6 +20,10 @@ export function arrayIn(
   return structure?.kind === 'array' ? structure : undefined;
 }
 
+export function unknownArrayMessage(target: string): string {
+  return `Unknown array structure '${target}'`;
+}
+
 export function indexMessage(
   length: number,
   i: number,
@@ -43,7 +47,7 @@ export function positionProblem(
   at: number | string,
 ): string | undefined {
   const length = arrayIn(state, target)?.items.length;
-  if (length === undefined) return `Unknown array structure '${target}'`;
+  if (length === undefined) return unknownArrayMessage(target);
   if (typeof at !== 'number' || slotProblem(length, at, target) !== undefined) {
     return `Mark position ${String(at)} is out of bounds for '${target}' (length ${length})`;
   }
@@ -57,7 +61,7 @@ export function rangeProblem(
   to: number,
 ): string | undefined {
   const length = arrayIn(state, target)?.items.length;
-  if (length === undefined) return `Unknown array structure '${target}'`;
+  if (length === undefined) return unknownArrayMessage(target);
   if (
     Number.isInteger(from) &&
     Number.isInteger(to) &&
@@ -99,7 +103,7 @@ export function applyOperation(
   const { target } = operation;
   const array = arrayIn(state, target);
   if (array === undefined) {
-    return { ok: false, problem: `Unknown array structure '${target}'` };
+    return { ok: false, problem: unknownArrayMessage(target) };
   }
   const items = array.items;
   const slot = (i: number): Item | undefined =>
@@ -117,12 +121,14 @@ export function applyOperation(
   if (first === undefined) return outOfBounds(operation.i);
 
   if (operation.op === 'compare' || operation.op === 'compareValue') {
-    const secondIndex = operation.op === 'compare' ? operation.j : 0;
-    const other =
-      operation.op === 'compare'
-        ? slot(secondIndex)
-        : { value: operation.value };
-    if (other === undefined) return outOfBounds(secondIndex);
+    let other: { value: number };
+    if (operation.op === 'compare') {
+      const second = slot(operation.j);
+      if (second === undefined) return outOfBounds(operation.j);
+      other = second;
+    } else {
+      other = { value: operation.value };
+    }
     if (sign(first.value - other.value) !== operation.result) {
       return {
         ok: false,

@@ -2,11 +2,12 @@ import { TraceLimitExceeded } from './errors.js';
 import {
   applyOperation,
   arrayIn,
-  indexMessage,
   positionProblem,
   rangeProblem,
   sign,
+  slotProblem,
   statKey,
+  unknownArrayMessage,
 } from './operations.js';
 import type {
   Marks,
@@ -132,18 +133,16 @@ export class Tracer {
   arrayOf(name: string): ArrayStructure {
     const structure = arrayIn(this.#state, name);
     if (structure === undefined) {
-      throw new Error(`Unknown array structure '${name}'`);
+      throw new Error(unknownArrayMessage(name));
     }
     return structure;
   }
 
   itemAt(name: string, i: number) {
     const items = this.arrayOf(name).items;
-    const item = Number.isInteger(i) ? items[i] : undefined;
-    if (item === undefined) {
-      throw new RangeError(indexMessage(items.length, i, name));
-    }
-    return item;
+    const problem = slotProblem(items.length, i, name);
+    if (problem !== undefined) throw new RangeError(problem);
+    return items[i];
   }
 
   array(name: string): ArrayHandle {
