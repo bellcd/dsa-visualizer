@@ -1,6 +1,8 @@
 {
   "$schema": "./node_modules/@biomejs/biome/configuration_schema.json",
-  "files": { "includes": ["**", "!**/*.md", "!package-lock.json"] },
+  "files": {
+    "includes": ["**", "!**/*.md", "!package-lock.json", "!lint-all"]
+  },
   "vcs": { "enabled": true, "clientKind": "git", "useIgnoreFile": true },
   "formatter": { "indentStyle": "space", "indentWidth": 2 },
   "javascript": { "formatter": { "quoteStyle": "single" } },
