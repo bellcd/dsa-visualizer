@@ -5,7 +5,7 @@ const lengths: Record<string, number> = { a: 3, b: 1 };
 const marks = () => new MarkSet((target) => lengths[target]);
 
 describe('pointer', () => {
-  test('sets, moves and clears a pointer', () => {
+  test('pointer sets, moves and clears a pointer', () => {
     const m = marks();
     m.pointer('i', 'a', 0);
     expect(m.snapshot().pointers).toEqual({ i: { target: 'a', at: 0 } });
@@ -15,37 +15,51 @@ describe('pointer', () => {
     expect(m.snapshot().pointers).toEqual({});
   });
 
-  test('clearing a pointer that is not set is fine', () => {
+  test('pointer clearing one that is not set is fine', () => {
     const m = marks();
     m.pointer('i', 'a', null);
     expect(m.snapshot().pointers).toEqual({});
   });
 
-  test('accepts the first and last position', () => {
+  test('pointer accepts the first and last position', () => {
     const m = marks();
     m.pointer('i', 'a', 0);
     m.pointer('j', 'a', 2);
     expect(Object.keys(m.snapshot().pointers)).toEqual(['i', 'j']);
   });
 
-  test.each([
-    [3, "Mark position 3 is out of bounds for 'a' (length 3)"],
-    [-1, "Mark position -1 is out of bounds for 'a' (length 3)"],
-    [0.5, "Mark position 0.5 is out of bounds for 'a' (length 3)"],
-    ['x', "Mark position x is out of bounds for 'a' (length 3)"],
-  ])('rejects position %s with a RangeError', (at, message) => {
-    const m = marks();
-    expect(() => m.pointer('i', 'a', at)).toThrow(new RangeError(message));
+  test('pointer rejects position 3 with a RangeError', () => {
+    expect(() => marks().pointer('i', 'a', 3)).toThrow(
+      new RangeError("Mark position 3 is out of bounds for 'a' (length 3)"),
+    );
   });
 
-  test('throws on an unknown structure, even when clearing', () => {
+  test('pointer rejects position -1 with a RangeError', () => {
+    expect(() => marks().pointer('i', 'a', -1)).toThrow(
+      new RangeError("Mark position -1 is out of bounds for 'a' (length 3)"),
+    );
+  });
+
+  test('pointer rejects position 0.5 with a RangeError', () => {
+    expect(() => marks().pointer('i', 'a', 0.5)).toThrow(
+      new RangeError("Mark position 0.5 is out of bounds for 'a' (length 3)"),
+    );
+  });
+
+  test('pointer rejects position x with a RangeError', () => {
+    expect(() => marks().pointer('i', 'a', 'x')).toThrow(
+      new RangeError("Mark position x is out of bounds for 'a' (length 3)"),
+    );
+  });
+
+  test('pointer throws on an unknown structure, even when clearing', () => {
     const m = marks();
     const message = "Unknown array structure 'zz'";
     expect(() => m.pointer('i', 'zz', 0)).toThrow(new Error(message));
     expect(() => m.pointer('i', 'zz', null)).toThrow(new Error(message));
   });
 
-  test('a failed call changes nothing', () => {
+  test('pointer failed call changes nothing', () => {
     const m = marks();
     m.pointer('i', 'a', 1);
     expect(() => m.pointer('i', 'a', 9)).toThrow(RangeError);
@@ -54,7 +68,7 @@ describe('pointer', () => {
 });
 
 describe('range', () => {
-  test('sets, replaces and clears a range', () => {
+  test('range sets, replaces and clears a range', () => {
     const m = marks();
     m.range('r', 'a', 1, 3);
     expect(m.snapshot().ranges).toEqual({ r: { target: 'a', from: 1, to: 3 } });
@@ -64,28 +78,54 @@ describe('range', () => {
     expect(m.snapshot().ranges).toEqual({});
   });
 
-  test('accepts a full range and an empty range at the end', () => {
+  test('range accepts a full range and an empty range at the end', () => {
     const m = marks();
     m.range('full', 'a', 0, 3);
     m.range('empty', 'a', 3, 3);
     expect(Object.keys(m.snapshot().ranges)).toEqual(['full', 'empty']);
   });
 
-  test.each([
-    [0, 4, 'Range [0, 4)'],
-    [-1, 2, 'Range [-1, 2)'],
-    [2, 1, 'Range [2, 1)'],
-    [0.5, 2, 'Range [0.5, 2)'],
-    [0, 1.5, 'Range [0, 1.5)'],
-  ])('rejects [%s, %s) with a RangeError', (from, to, start) => {
+  test('range rejects [0, 4) with a RangeError', () => {
     const m = marks();
-    expect(() => m.range('r', 'a', from, to)).toThrow(
-      new RangeError(`${start} is out of bounds for 'a' (length 3)`),
+    expect(() => m.range('r', 'a', 0, 4)).toThrow(
+      new RangeError("Range [0, 4) is out of bounds for 'a' (length 3)"),
     );
     expect(m.snapshot().ranges).toEqual({});
   });
 
-  test('throws on an unknown structure', () => {
+  test('range rejects [-1, 2) with a RangeError', () => {
+    const m = marks();
+    expect(() => m.range('r', 'a', -1, 2)).toThrow(
+      new RangeError("Range [-1, 2) is out of bounds for 'a' (length 3)"),
+    );
+    expect(m.snapshot().ranges).toEqual({});
+  });
+
+  test('range rejects [2, 1) with a RangeError', () => {
+    const m = marks();
+    expect(() => m.range('r', 'a', 2, 1)).toThrow(
+      new RangeError("Range [2, 1) is out of bounds for 'a' (length 3)"),
+    );
+    expect(m.snapshot().ranges).toEqual({});
+  });
+
+  test('range rejects [0.5, 2) with a RangeError', () => {
+    const m = marks();
+    expect(() => m.range('r', 'a', 0.5, 2)).toThrow(
+      new RangeError("Range [0.5, 2) is out of bounds for 'a' (length 3)"),
+    );
+    expect(m.snapshot().ranges).toEqual({});
+  });
+
+  test('range rejects [0, 1.5) with a RangeError', () => {
+    const m = marks();
+    expect(() => m.range('r', 'a', 0, 1.5)).toThrow(
+      new RangeError("Range [0, 1.5) is out of bounds for 'a' (length 3)"),
+    );
+    expect(m.snapshot().ranges).toEqual({});
+  });
+
+  test('range throws on an unknown structure', () => {
     expect(() => marks().range('r', 'zz', 0, 0)).toThrow(
       new Error("Unknown array structure 'zz'"),
     );
@@ -153,7 +193,7 @@ describe('tag and untag', () => {
 });
 
 describe('setVar', () => {
-  test('sets and overwrites variables', () => {
+  test('setVar sets and overwrites variables', () => {
     const m = marks();
     m.setVar('k', 1);
     m.setVar('flag', true);
@@ -163,7 +203,7 @@ describe('setVar', () => {
 });
 
 describe('snapshot', () => {
-  test('is a copy that later calls do not change', () => {
+  test('snapshot is a copy that later calls do not change', () => {
     const m = marks();
     m.pointer('i', 'a', 0);
     m.tag('a', 0, 't');
@@ -174,7 +214,7 @@ describe('snapshot', () => {
     expect(before.tags.t).toHaveLength(1);
   });
 
-  test('checks positions against the lengths as they are now', () => {
+  test('snapshot checks positions against current lengths', () => {
     const live: Record<string, number> = { a: 1 };
     const m = new MarkSet((target) => live[target]);
     expect(() => m.pointer('i', 'a', 2)).toThrow(RangeError);
