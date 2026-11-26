@@ -1,0 +1,6 @@
+language js
+
+`$expr as $type` where {
+  $type <: not r"const",
+  register_diagnostic(span=$type, message="Do not use `as` type assertions: they silence the type checker. Narrow with a type guard, parse with a schema, or change the signature so the cast is not needed. `as const` is allowed.")
+}

@@ -10,5 +10,6 @@
       "preset": "recommended",
       "correctness": { "noUndeclaredDependencies": "error" }
     }
-  }
+  },
+  "plugins": ["./biome-plugins/no-type-assertion.grit"]
 }
