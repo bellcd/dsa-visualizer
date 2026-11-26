@@ -22,13 +22,17 @@ export function arrayIn(
   return structure?.kind === 'array' ? structure : undefined;
 }
 
+function indexMessage(length: number, i: number, target: string): string {
+  return `Index ${i} is out of bounds for '${target}' (length ${length})`;
+}
+
 export function slotProblem(
   length: number,
   i: number,
   target: string,
 ): string | undefined {
   if (Number.isInteger(i) && i >= 0 && i < length) return undefined;
-  return `Index ${i} is out of bounds for '${target}' (length ${length})`;
+  return indexMessage(length, i, target);
 }
 
 export function positionProblem(
@@ -78,7 +82,6 @@ export function statKey(operation: Operation): StatKey | undefined {
   }
 }
 
-// NOTE: Pure: `state` is never mutated, and `freshId` is called only when a `set` is valid.
 export function applyOperation(
   state: State,
   operation: Operation,
@@ -101,7 +104,7 @@ export function applyOperation(
     Number.isInteger(i) ? items[i] : undefined;
   const outOfBounds = (i: number): Applied => ({
     ok: false,
-    problem: slotProblem(items.length, i, target) ?? '',
+    problem: indexMessage(items.length, i, target),
   });
   const withItems = (next: Item[]): Applied => ({
     ok: true,

@@ -176,41 +176,83 @@ describe('applyOperation', () => {
 });
 
 describe('bounds rules', () => {
-  test('slotProblem', () => {
+  test('slotProblem accepts in-range integer indices', () => {
     expect(slotProblem(3, 0, 'a')).toBeUndefined();
     expect(slotProblem(3, 2, 'a')).toBeUndefined();
+  });
+
+  test('slotProblem rejects an index past the end with a message', () => {
     expect(slotProblem(3, 3, 'a')).toBe(
       "Index 3 is out of bounds for 'a' (length 3)",
     );
+  });
+
+  test('slotProblem rejects negative indices', () => {
     expect(slotProblem(3, -1, 'a')).toBeDefined();
+  });
+
+  test('slotProblem rejects fractional indices', () => {
     expect(slotProblem(3, 1.5, 'a')).toBeDefined();
   });
 
-  test('positionProblem', () => {
+  test('positionProblem accepts an in-range position', () => {
     expect(positionProblem(state(), 'a', 2)).toBeUndefined();
+  });
+
+  test('positionProblem rejects a position past the end with a message', () => {
     expect(positionProblem(state(), 'a', 3)).toBe(
       "Mark position 3 is out of bounds for 'a' (length 3)",
     );
+  });
+
+  test('positionProblem rejects a non-numeric position', () => {
     expect(positionProblem(state(), 'a', 'x')).toBe(
       "Mark position x is out of bounds for 'a' (length 3)",
     );
+  });
+
+  test('positionProblem rejects negative positions', () => {
     expect(positionProblem(state(), 'a', -1)).toBeDefined();
+  });
+
+  test('positionProblem rejects fractional positions', () => {
     expect(positionProblem(state(), 'a', 0.5)).toBeDefined();
+  });
+
+  test('positionProblem reports an unknown array', () => {
     expect(positionProblem(state(), 'zz', 0)).toBe(
       "Unknown array structure 'zz'",
     );
   });
 
-  test('rangeProblem', () => {
+  test('rangeProblem accepts full and empty in-range ranges', () => {
     expect(rangeProblem(state(), 'a', 0, 3)).toBeUndefined();
     expect(rangeProblem(state(), 'a', 2, 2)).toBeUndefined();
+  });
+
+  test('rangeProblem rejects a range past the end with a message', () => {
     expect(rangeProblem(state(), 'a', 0, 4)).toBe(
       "Range [0, 4) is out of bounds for 'a' (length 3)",
     );
+  });
+
+  test('rangeProblem rejects a negative start', () => {
     expect(rangeProblem(state(), 'a', -1, 2)).toBeDefined();
+  });
+
+  test('rangeProblem rejects a start after the end', () => {
     expect(rangeProblem(state(), 'a', 2, 1)).toBeDefined();
+  });
+
+  test('rangeProblem rejects a fractional start', () => {
     expect(rangeProblem(state(), 'a', 0.5, 2)).toBeDefined();
+  });
+
+  test('rangeProblem rejects a fractional end', () => {
     expect(rangeProblem(state(), 'a', 0, 1.5)).toBeDefined();
+  });
+
+  test('rangeProblem reports an unknown array', () => {
     expect(rangeProblem(state(), 'zz', 0, 0)).toBe(
       "Unknown array structure 'zz'",
     );
@@ -218,23 +260,41 @@ describe('bounds rules', () => {
 });
 
 describe('statKey and sign', () => {
-  test('statKey names the stat each operation counts', () => {
+  test('statKey counts compare as compares', () => {
     expect(statKey({ op: 'compare', target: 'a', i: 0, j: 1, result: 0 })).toBe(
       'compares',
     );
+  });
+
+  test('statKey counts compareValue as compares', () => {
     expect(
       statKey({ op: 'compareValue', target: 'a', i: 0, value: 1, result: 0 }),
     ).toBe('compares');
+  });
+
+  test('statKey counts swap as swaps', () => {
     expect(statKey({ op: 'swap', target: 'a', i: 0, j: 1 })).toBe('swaps');
+  });
+
+  test('statKey counts set as sets', () => {
     expect(statKey({ op: 'set', target: 'a', i: 0, value: 1, prev: 1 })).toBe(
       'sets',
     );
-    for (const op of ['init', 'mark', 'done'] as const) {
-      expect(statKey({ op })).toBeUndefined();
-    }
   });
 
-  test('sign', () => {
+  test('statKey counts init as nothing', () => {
+    expect(statKey({ op: 'init' })).toBeUndefined();
+  });
+
+  test('statKey counts mark as nothing', () => {
+    expect(statKey({ op: 'mark' })).toBeUndefined();
+  });
+
+  test('statKey counts done as nothing', () => {
+    expect(statKey({ op: 'done' })).toBeUndefined();
+  });
+
+  test('sign maps negative, zero and positive numbers to -1, 0 and 1', () => {
     expect([sign(-7), sign(0), sign(3)]).toEqual([-1, 0, 1]);
   });
 });
