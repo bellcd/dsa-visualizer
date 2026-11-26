@@ -8,7 +8,7 @@ import {
 } from '../src/trace/index.js';
 import { checkConsistency } from './consistency.js';
 
-export const RUNS = 200;
+const RUNS = 200;
 
 type Range = { min?: number; max?: number; lo?: number; hi?: number };
 
@@ -55,13 +55,13 @@ export function algorithmContract<I extends Record<string, unknown>, R>(
       examples: spec.examples.map((input) => [input]),
     });
   };
-  const run = (input: I) => trace(def, input);
+  const run = (input: I): Trace<R> => trace(def, input);
 
   describe(`${def.id} contract`, () => {
     test(
       '1. the result is correct',
       property((input) => {
-        spec.check(input, run(input).result as R);
+        spec.check(input, run(input).result);
       }),
     );
 

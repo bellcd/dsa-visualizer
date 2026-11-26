@@ -1,6 +1,10 @@
-import type { Marks, Step, Structure, Trace } from '../src/trace/index.js';
-
-type Items = Extract<Structure, { kind: 'array' }>['items'];
+import type {
+  Item,
+  State,
+  Step,
+  Structure,
+  Trace,
+} from '../src/trace/index.js';
 
 const sign = (n: number): -1 | 0 | 1 => {
   if (n < 0) return -1;
@@ -10,13 +14,12 @@ const sign = (n: number): -1 | 0 | 1 => {
 
 const byNumber = (a: number, b: number) => a - b;
 
-function itemsOf(state: Step['state'], target: string): Items | undefined {
+function itemsOf(state: State, target: string): Item[] | undefined {
   const s = state[target];
   return s?.kind === 'array' ? s.items : undefined;
 }
 
-// Applies `next.operation` to a copy of `prev.state`. `seen` holds every id
-// each structure has ever had, so a `set` can be checked for a fresh id.
+// NOTE: `seen` tracks all past ids, since a `set` must mint an id never used.
 function applyOperation(
   prev: Step,
   next: Step,
@@ -74,7 +77,7 @@ function applyOperation(
 }
 
 function checkMarks(step: Step, at: string, problems: string[]) {
-  const { marks, state } = step as { marks: Marks; state: Step['state'] };
+  const { marks, state } = step;
   const inBounds = (target: string, pos: number | string) => {
     const items = itemsOf(state, target);
     return (
@@ -133,7 +136,7 @@ function roundTrips(trace: Trace): boolean {
   return JSON.stringify(JSON.parse(text)) === text;
 }
 
-function sortedIds(state: Step['state']): Record<string, number[]> {
+function sortedIds(state: State): Record<string, number[]> {
   const out: Record<string, number[]> = {};
   for (const [name, s] of Object.entries(state)) {
     if (s.kind === 'array') out[name] = s.items.map((i) => i.id).sort(byNumber);
@@ -179,9 +182,9 @@ export function checkConsistency(trace: Trace): string[] {
   trackIds(first, 'step 0');
   checkMarks(first, 'step 0', problems);
 
-  for (let k = 1; k < steps.length; k++) {
-    const prev = steps[k - 1] as Step;
-    const next = steps[k] as Step;
+  let prev = first;
+  for (const [k, next] of steps.entries()) {
+    if (k === 0) continue;
     const at = `step ${k}`;
     const op = next.operation.op;
     if (op === 'compare' || op === 'compareValue') counts.compares++;
@@ -201,6 +204,7 @@ export function checkConsistency(trace: Trace): string[] {
     if (!sawSet && JSON.stringify(sortedIds(next.state)) !== initialIds) {
       problems.push(`${at}: ids are not a permutation of the initial ids`);
     }
+    prev = next;
   }
 
   for (const key of ['compares', 'swaps', 'sets'] as const) {

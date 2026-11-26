@@ -6,6 +6,7 @@ export type {
   Item,
   Marks,
   Operation,
+  State,
   Step,
   Structure,
   Trace,

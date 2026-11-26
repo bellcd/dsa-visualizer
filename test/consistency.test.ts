@@ -5,10 +5,10 @@ import { checkConsistency } from './consistency.js';
 
 const good = (): Trace => trace(demoSwapDef, { values: [5, 1, 4, 2, 3] });
 
-const broken = (mutate: (t: Trace) => void): string => {
+const broken = (mutate: (t: Trace) => void): string[] => {
   const t = good();
   mutate(t);
-  return checkConsistency(t).join('\n');
+  return checkConsistency(t);
 };
 
 function stepAt(t: Trace, i: number) {
@@ -30,72 +30,85 @@ function itemAt(t: Trace, i: number, k: number) {
 }
 
 describe('checkConsistency', () => {
-  test('accepts a sound trace', () => {
+  test('checkConsistency accepts a sound trace', () => {
     expect(checkConsistency(good())).toEqual([]);
   });
 
-  test('catches a wrong snapshot', () => {
+  test('checkConsistency reports a wrong snapshot', () => {
     const problems = broken((t) => {
       itemAt(t, 2, 0).value = 12345;
     });
-    expect(problems).toMatch(/step 2: state is not/);
+    expect(problems).toEqual([
+      'step 2: state is not the previous state plus the operation',
+      'step 3: state is not the previous state plus the operation',
+    ]);
   });
 
-  test('catches a duplicate id', () => {
+  test('checkConsistency reports a duplicate id', () => {
     const problems = broken((t) => {
       itemAt(t, 1, 1).id = itemAt(t, 1, 0).id;
     });
-    expect(problems).toMatch(/step 1: duplicate id in 'a'/);
+    expect(problems).toEqual([
+      'step 1: state is not the previous state plus the operation',
+      "step 1: duplicate id in 'a'",
+      'step 1: ids are not a permutation of the initial ids',
+      'step 2: state is not the previous state plus the operation',
+    ]);
   });
 
-  test('catches ids that are not a permutation when no set happened', () => {
+  test('checkConsistency reports ids that are not a permutation when no set happened', () => {
     const problems = broken((t) => {
       t.steps = t.steps.slice(0, 2).concat(t.steps.slice(-1));
       t.stats = { compares: 1, swaps: 0, sets: 0 };
       itemAt(t, 1, 0).id = 99;
     });
-    expect(problems).toMatch(/not a permutation/);
+    expect(problems).toEqual([
+      'step 1: state is not the previous state plus the operation',
+      'step 1: ids are not a permutation of the initial ids',
+      'step 2: state is not the previous state plus the operation',
+      'step 2: ids are not a permutation of the initial ids',
+    ]);
   });
 
-  test('catches an out-of-bounds mark', () => {
+  test('checkConsistency reports an out-of-bounds mark', () => {
     const problems = broken((t) => {
       stepAt(t, 1).marks.pointers.i = { target: 'a', at: 5 };
     });
-    expect(problems).toMatch(/step 1: pointer 'i' is out of bounds/);
+    expect(problems).toEqual(["step 1: pointer 'i' is out of bounds"]);
   });
 
-  test('catches an out-of-bounds range', () => {
+  test('checkConsistency reports an out-of-bounds range', () => {
     const problems = broken((t) => {
       stepAt(t, 1).marks.ranges.sorted = { target: 'a', from: 2, to: 6 };
     });
-    expect(problems).toMatch(/range 'sorted' is out of bounds/);
+    expect(problems).toEqual(["step 1: range 'sorted' is out of bounds"]);
   });
 
-  test('catches a missing done', () => {
+  test('checkConsistency reports a missing done', () => {
     const problems = broken((t) => {
       t.steps.pop();
     });
-    expect(problems).toMatch(/last step is not done/);
+    expect(problems).toEqual(['last step is not done']);
   });
 
-  test('catches wrong stats', () => {
+  test('checkConsistency reports wrong stats', () => {
     const problems = broken((t) => {
       t.stats.compares = 7;
     });
-    expect(problems).toMatch(/stats\.compares is 7, counted 2/);
+    expect(problems).toEqual(['stats.compares is 7, counted 2']);
   });
 
-  test('catches a missing init', () => {
+  test('checkConsistency reports a missing init', () => {
     const problems = broken((t) => {
       stepAt(t, 0).operation = { op: 'mark' };
     });
-    expect(problems).toMatch(/first step is not init/);
+    expect(problems).toEqual(['first step is not init']);
   });
 
-  test('catches a trace that does not round-trip through JSON', () => {
+  test('checkConsistency reports a trace that does not round-trip through JSON', () => {
     const problems = broken((t) => {
       stepAt(t, 1).note = undefined;
     });
-    expect(problems).toMatch(/does not round-trip through JSON/);
+    expect(problems).toEqual(['trace does not round-trip through JSON']);
   });
 });
