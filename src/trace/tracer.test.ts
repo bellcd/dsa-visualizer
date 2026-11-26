@@ -324,6 +324,27 @@ describe('marks and Steps', () => {
   });
 });
 
+describe('marks and State lengths', () => {
+  test('marks are bounds-checked against the live length of the structure', () => {
+    expect(() => run([1, 2], (t) => t.pointer('i', 'a', 2))).toThrow(
+      RangeError,
+    );
+    expect(() => run([1, 2, 3], (t) => t.pointer('i', 'a', 2))).not.toThrow();
+    expect(() => run([1, 2], (t) => t.range('r', 'a', 0, 3))).toThrow(
+      RangeError,
+    );
+    expect(() => run([1, 2], (t) => t.tag('a', 2, 't'))).toThrow(RangeError);
+  });
+
+  test('a mark on an unknown structure throws', () => {
+    expect(() => run([1], (t) => t.pointer('i', 'nope', 0))).toThrow('nope');
+  });
+
+  test('array() of an unknown structure throws', () => {
+    expect(() => run([1], (t) => t.array('nope'))).toThrow('nope');
+  });
+});
+
 describe('depth', () => {
   test('depth from enter and exit persists until changed, and zero is omitted', () => {
     const tr = run([1], (t) => {

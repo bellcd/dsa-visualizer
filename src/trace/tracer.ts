@@ -21,7 +21,6 @@ export const MAX_STEPS = 10_000;
 
 type ArrayStructure = Extract<Structure, { kind: 'array' }>;
 
-// NOTE: The only reads and recording an ArrayHandle gets from its Tracer.
 type ArrayPort = {
   items(): readonly Item[];
   record(operation: Operation): void;
