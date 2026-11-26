@@ -34,7 +34,7 @@ describe('checkConsistency', () => {
     expect(checkConsistency(good())).toEqual([]);
   });
 
-  test('checkConsistency reports a wrong snapshot', () => {
+  test('checkConsistency reports a wrong state', () => {
     const problems = broken((t) => {
       itemAt(t, 2, 0).value = 12345;
     });

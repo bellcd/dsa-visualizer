@@ -5,7 +5,9 @@ import { algorithmContract, numberArrays } from './contract.js';
 const byValue = (a: number, b: number) => a - b;
 
 algorithmContract(demoSwapDef, {
-  arbitrary: numberArrays({ min: 5, max: 5 }).map((values) => ({ values })),
+  arbitrary: numberArrays({ min: 5, max: 5, lo: -99, hi: 99 }).map(
+    (values) => ({ values }),
+  ),
   check({ values }, result) {
     const [a = 0, b = 0, c = 0, d = 0] = values;
     expect(result).toEqual(a > b ? [b, a, c, d, c] : [a, b, c, d, c]);

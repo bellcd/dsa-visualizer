@@ -10,28 +10,28 @@ import { checkConsistency } from './consistency.js';
 
 const RUNS = 200;
 
-type Range = { min?: number; max?: number; lo?: number; hi?: number };
+type Range = { min: number; max: number; lo: number; hi: number };
 
-/** Arrays of integers; defaults to 0..64 items of -99..99. */
+/** Arrays of `min`..`max` integers in `lo`..`hi`. */
 export function numberArrays({
-  min = 0,
-  max = 64,
-  lo = -99,
-  hi = 99,
-}: Range = {}): fc.Arbitrary<number[]> {
+  min,
+  max,
+  lo,
+  hi,
+}: Range): fc.Arbitrary<number[]> {
   return fc.array(fc.integer({ min: lo, max: hi }), {
     minLength: min,
     maxLength: max,
   });
 }
 
-export function sortedNumberArrays(range: Range = {}): fc.Arbitrary<number[]> {
+export function sortedNumberArrays(range: Range): fc.Arbitrary<number[]> {
   return numberArrays(range).map((values) => values.sort((a, b) => a - b));
 }
 
-export type Ctx<I> = { input: I; index: number; prev: Step | undefined };
+type Ctx<I> = { input: I; index: number; prev: Step | undefined };
 
-export type ContractSpec<I, R> = {
+type ContractSpec<I, R> = {
   arbitrary: fc.Arbitrary<I>;
   /** Throws (e.g. via `expect`) when the result is wrong for the input. */
   check(input: I, result: R): void;
