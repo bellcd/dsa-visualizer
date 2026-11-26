@@ -37,39 +37,6 @@ export function slotProblem(
   return indexMessage(length, i, target);
 }
 
-export function positionProblem(
-  state: State,
-  target: string,
-  at: number | string,
-): string | undefined {
-  const length = arrayIn(state, target)?.items.length;
-  if (length === undefined) return unknownArrayMessage(target);
-  if (typeof at !== 'number' || slotProblem(length, at, target) !== undefined) {
-    return `Mark position ${String(at)} is out of bounds for '${target}' (length ${length})`;
-  }
-  return undefined;
-}
-
-export function rangeProblem(
-  state: State,
-  target: string,
-  from: number,
-  to: number,
-): string | undefined {
-  const length = arrayIn(state, target)?.items.length;
-  if (length === undefined) return unknownArrayMessage(target);
-  if (
-    Number.isInteger(from) &&
-    Number.isInteger(to) &&
-    from >= 0 &&
-    from <= to &&
-    to <= length
-  ) {
-    return undefined;
-  }
-  return `Range [${from}, ${to}) is out of bounds for '${target}' (length ${length})`;
-}
-
 export function statKey(operation: Operation): StatKey | undefined {
   switch (operation.op) {
     case 'compare':
