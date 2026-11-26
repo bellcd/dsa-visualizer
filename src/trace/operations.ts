@@ -2,11 +2,9 @@ import type { Item, Operation, State, Structure } from './types.js';
 
 type ArrayStructure = Extract<Structure, { kind: 'array' }>;
 
-export type Applied =
-  | { ok: true; state: State }
-  | { ok: false; problem: string };
+type Applied = { ok: true; state: State } | { ok: false; problem: string };
 
-export type StatKey = 'compares' | 'swaps' | 'sets';
+type StatKey = 'compares' | 'swaps' | 'sets';
 
 export function sign(n: number): -1 | 0 | 1 {
   if (n < 0) return -1;
@@ -22,7 +20,11 @@ export function arrayIn(
   return structure?.kind === 'array' ? structure : undefined;
 }
 
-function indexMessage(length: number, i: number, target: string): string {
+export function indexMessage(
+  length: number,
+  i: number,
+  target: string,
+): string {
   return `Index ${i} is out of bounds for '${target}' (length ${length})`;
 }
 

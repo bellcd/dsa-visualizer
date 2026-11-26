@@ -26,7 +26,7 @@ const apply = (op: Operation, next = 10) =>
   applyOperation(state(), op, () => next);
 
 describe('applyOperation', () => {
-  test('swap exchanges two items, ids travelling with them', () => {
+  test('applyOperation swap exchanges two items, ids travelling with them', () => {
     expect(apply({ op: 'swap', target: 'a', i: 0, j: 1 })).toEqual({
       ok: true,
       state: {
@@ -43,14 +43,14 @@ describe('applyOperation', () => {
     });
   });
 
-  test('swapping a slot with itself changes nothing', () => {
+  test('applyOperation swap of a slot with itself changes nothing', () => {
     expect(apply({ op: 'swap', target: 'a', i: 1, j: 1 })).toEqual({
       ok: true,
       state: state(),
     });
   });
 
-  test('set writes the value under the minted id', () => {
+  test('applyOperation set writes the value under the minted id', () => {
     expect(
       apply({ op: 'set', target: 'a', i: 2, value: 7, prev: 5 }, 42),
     ).toEqual({
@@ -69,36 +69,44 @@ describe('applyOperation', () => {
     });
   });
 
-  test('set only asks for an id when it is valid', () => {
+  test('applyOperation set does not ask for an id when the index is out of bounds', () => {
     let asked = 0;
-    const freshId = () => asked++;
     applyOperation(
       state(),
       { op: 'set', target: 'a', i: 9, value: 1, prev: 1 },
-      freshId,
+      () => asked++,
     );
+    expect(asked).toBe(0);
+  });
+
+  test('applyOperation set does not ask for an id when prev is wrong', () => {
+    let asked = 0;
     applyOperation(
       state(),
       { op: 'set', target: 'a', i: 0, value: 1, prev: 4 },
-      freshId,
+      () => asked++,
     );
     expect(asked).toBe(0);
+  });
+
+  test('applyOperation set asks for one id when valid', () => {
+    let asked = 0;
     applyOperation(
       state(),
       { op: 'set', target: 'a', i: 0, value: 1, prev: 5 },
-      freshId,
+      () => asked++,
     );
     expect(asked).toBe(1);
   });
 
-  test('set rejects a wrong prev', () => {
+  test('applyOperation set rejects a wrong prev', () => {
     expect(apply({ op: 'set', target: 'a', i: 0, value: 1, prev: 4 })).toEqual({
       ok: false,
       problem: 'set prev 4 but slot held 5',
     });
   });
 
-  test('does not mutate the state it is given', () => {
+  test('applyOperation does not mutate the state it is given', () => {
     const before = state();
     applyOperation(before, { op: 'swap', target: 'a', i: 0, j: 2 }, () => 9);
     applyOperation(
@@ -109,66 +117,113 @@ describe('applyOperation', () => {
     expect(before).toEqual(state());
   });
 
-  test.each([
-    [0, 2, 0],
-    [0, 1, 1],
-    [1, 0, -1],
-  ] as const)('compare of slots %i and %i is %i', (i, j, result) => {
-    expect(apply({ op: 'compare', target: 'a', i, j, result })).toEqual({
-      ok: true,
-      state: state(),
-    });
+  test('applyOperation compare returns 0 when the slots are equal', () => {
+    expect(
+      apply({ op: 'compare', target: 'a', i: 0, j: 2, result: 0 }),
+    ).toEqual({ ok: true, state: state() });
   });
 
-  test('compare rejects a wrong result', () => {
+  test('applyOperation compare returns 1 when slot i is larger', () => {
+    expect(
+      apply({ op: 'compare', target: 'a', i: 0, j: 1, result: 1 }),
+    ).toEqual({ ok: true, state: state() });
+  });
+
+  test('applyOperation compare returns -1 when slot i is smaller', () => {
+    expect(
+      apply({ op: 'compare', target: 'a', i: 1, j: 0, result: -1 }),
+    ).toEqual({ ok: true, state: state() });
+  });
+
+  test('applyOperation compare rejects a wrong result', () => {
     expect(
       apply({ op: 'compare', target: 'a', i: 0, j: 1, result: -1 }),
     ).toEqual({ ok: false, problem: 'compare result -1 is wrong' });
   });
 
-  test('compareValue checks against the held value', () => {
+  test('applyOperation compareValue accepts the result matching the held value', () => {
     expect(
       apply({ op: 'compareValue', target: 'a', i: 1, value: 3, result: -1 }),
     ).toEqual({ ok: true, state: state() });
+  });
+
+  test('applyOperation compareValue rejects a wrong result', () => {
     expect(
       apply({ op: 'compareValue', target: 'a', i: 1, value: 3, result: 1 }),
     ).toEqual({ ok: false, problem: 'compareValue result 1 is wrong' });
   });
 
-  const outOfBounds: [Operation, number][] = [
-    [{ op: 'compare', target: 'a', i: 3, j: 0, result: 1 }, 3],
-    [{ op: 'compare', target: 'a', i: 0, j: 3, result: -1 }, 3],
-    [{ op: 'compare', target: 'a', i: 0, j: -1, result: 1 }, -1],
-    [{ op: 'compareValue', target: 'a', i: 0.5, value: 1, result: 1 }, 0.5],
-    [{ op: 'swap', target: 'a', i: 3, j: 0 }, 3],
-    [{ op: 'swap', target: 'a', i: 0, j: 3 }, 3],
-    [{ op: 'set', target: 'a', i: -1, value: 1, prev: 1 }, -1],
-  ];
-
-  test.each(outOfBounds)('%j is out of bounds', (op, index) => {
+  const outOfBounds = (op: Operation, index: number) => {
     expect(apply(op)).toEqual({
       ok: false,
       problem: `Index ${index} is out of bounds for 'a' (length 3)`,
     });
+  };
+
+  test('applyOperation compare rejects i past the end', () => {
+    outOfBounds({ op: 'compare', target: 'a', i: 3, j: 0, result: 1 }, 3);
   });
 
-  test('an unknown target is a problem', () => {
+  test('applyOperation compare rejects j past the end', () => {
+    outOfBounds({ op: 'compare', target: 'a', i: 0, j: 3, result: -1 }, 3);
+  });
+
+  test('applyOperation compare rejects a negative j', () => {
+    outOfBounds({ op: 'compare', target: 'a', i: 0, j: -1, result: 1 }, -1);
+  });
+
+  test('applyOperation compareValue rejects a fractional i', () => {
+    outOfBounds(
+      { op: 'compareValue', target: 'a', i: 0.5, value: 1, result: 1 },
+      0.5,
+    );
+  });
+
+  test('applyOperation swap rejects i past the end', () => {
+    outOfBounds({ op: 'swap', target: 'a', i: 3, j: 0 }, 3);
+  });
+
+  test('applyOperation swap rejects j past the end', () => {
+    outOfBounds({ op: 'swap', target: 'a', i: 0, j: 3 }, 3);
+  });
+
+  test('applyOperation set rejects a negative i', () => {
+    outOfBounds({ op: 'set', target: 'a', i: -1, value: 1, prev: 1 }, -1);
+  });
+
+  test('applyOperation rejects an unknown target', () => {
     expect(apply({ op: 'swap', target: 'zz', i: 0, j: 0 })).toEqual({
       ok: false,
       problem: "Unknown array structure 'zz'",
     });
   });
 
-  test('a target that is not an array is a problem', () => {
+  test('applyOperation rejects a target that is not an array', () => {
     const tree: State = { t: { kind: 'tree', root: null, nodes: [] } };
     expect(
       applyOperation(tree, { op: 'swap', target: 't', i: 0, j: 0 }, () => 0),
     ).toEqual({ ok: false, problem: "Unknown array structure 't'" });
   });
 
-  test.each(['init', 'mark', 'done'] as const)('%s leaves the state', (op) => {
+  test('applyOperation init leaves the state', () => {
     const before = state();
-    expect(applyOperation(before, { op }, () => 0)).toEqual({
+    expect(applyOperation(before, { op: 'init' }, () => 0)).toEqual({
+      ok: true,
+      state: before,
+    });
+  });
+
+  test('applyOperation mark leaves the state', () => {
+    const before = state();
+    expect(applyOperation(before, { op: 'mark' }, () => 0)).toEqual({
+      ok: true,
+      state: before,
+    });
+  });
+
+  test('applyOperation done leaves the state', () => {
+    const before = state();
+    expect(applyOperation(before, { op: 'done' }, () => 0)).toEqual({
       ok: true,
       state: before,
     });
@@ -176,8 +231,11 @@ describe('applyOperation', () => {
 });
 
 describe('bounds rules', () => {
-  test('slotProblem accepts in-range integer indices', () => {
+  test('slotProblem accepts the first index', () => {
     expect(slotProblem(3, 0, 'a')).toBeUndefined();
+  });
+
+  test('slotProblem accepts the last index', () => {
     expect(slotProblem(3, 2, 'a')).toBeUndefined();
   });
 
@@ -225,8 +283,11 @@ describe('bounds rules', () => {
     );
   });
 
-  test('rangeProblem accepts full and empty in-range ranges', () => {
+  test('rangeProblem accepts a full range', () => {
     expect(rangeProblem(state(), 'a', 0, 3)).toBeUndefined();
+  });
+
+  test('rangeProblem accepts an empty in-range range', () => {
     expect(rangeProblem(state(), 'a', 2, 2)).toBeUndefined();
   });
 
@@ -294,8 +355,16 @@ describe('statKey and sign', () => {
     expect(statKey({ op: 'done' })).toBeUndefined();
   });
 
-  test('sign maps negative, zero and positive numbers to -1, 0 and 1', () => {
-    expect([sign(-7), sign(0), sign(3)]).toEqual([-1, 0, 1]);
+  test('sign maps a negative number to -1', () => {
+    expect(sign(-7)).toBe(-1);
+  });
+
+  test('sign maps zero to 0', () => {
+    expect(sign(0)).toBe(0);
+  });
+
+  test('sign maps a positive number to 1', () => {
+    expect(sign(3)).toBe(1);
   });
 });
 

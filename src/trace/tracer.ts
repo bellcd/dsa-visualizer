@@ -2,10 +2,10 @@ import { TraceLimitExceeded } from './errors.js';
 import {
   applyOperation,
   arrayIn,
+  indexMessage,
   positionProblem,
   rangeProblem,
   sign,
-  slotProblem,
   statKey,
 } from './operations.js';
 import type {
@@ -141,7 +141,7 @@ export class Tracer {
     const items = this.arrayOf(name).items;
     const item = Number.isInteger(i) ? items[i] : undefined;
     if (item === undefined) {
-      throw new RangeError(slotProblem(items.length, i, name));
+      throw new RangeError(indexMessage(items.length, i, name));
     }
     return item;
   }
