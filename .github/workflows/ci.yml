@@ -15,7 +15,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       code: ${{ steps.diff.outputs.code }}
-      algorithms: ${{ steps.diff.outputs.algorithms }}
+      mutate: ${{ steps.diff.outputs.mutate }}
     steps:
       - uses: actions/checkout@v5
         with:
@@ -26,8 +26,8 @@ jobs:
         run: |
           files=$(git diff --name-only --diff-filter=d "$BASE" HEAD)
           if grep -qvE '(^docs/|\.md$)' <<<"$files"; then echo code=true >> "$GITHUB_OUTPUT"; else echo code=false >> "$GITHUB_OUTPUT"; fi
-          algorithms=$(grep -E '^src/algorithms/.*\.ts$' <<<"$files" | grep -v '\.test\.ts$' | paste -sd, - || true)
-          echo "algorithms=$algorithms" >> "$GITHUB_OUTPUT"
+          mutate=$(grep -E '^src/(algorithms|trace)/.*\.ts$' <<<"$files" | grep -vE '\.test\.ts$|^src/algorithms/fixtures/' | paste -sd, - || true)
+          echo "mutate=$mutate" >> "$GITHUB_OUTPUT"
 
   checks:
     needs: changes
@@ -48,7 +48,7 @@ jobs:
 
   stryker:
     needs: changes
-    if: needs.changes.outputs.algorithms != ''
+    if: needs.changes.outputs.mutate != ''
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
@@ -58,7 +58,7 @@ jobs:
           cache: npm
       - run: npm ci
       - env:
-          FILES: ${{ needs.changes.outputs.algorithms }}
+          FILES: ${{ needs.changes.outputs.mutate }}
         run: npx stryker run --mutate "$FILES"
 
   result:
