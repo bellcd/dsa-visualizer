@@ -1,14 +1,30 @@
 {
   "$schema": "./node_modules/@biomejs/biome/configuration_schema.json",
-  "files": { "includes": ["**", "!**/*.md", "!package-lock.json"] },
-  "vcs": { "enabled": true, "clientKind": "git", "useIgnoreFile": true },
-  "formatter": { "indentStyle": "space", "indentWidth": 2 },
-  "javascript": { "formatter": { "quoteStyle": "single" } },
+  "files": {
+    "includes": ["**", "!**/*.md", "!package-lock.json"]
+  },
+  "vcs": {
+    "enabled": true,
+    "clientKind": "git",
+    "useIgnoreFile": true
+  },
+  "formatter": {
+    "indentStyle": "space",
+    "indentWidth": 2
+  },
+  "javascript": {
+    "formatter": {
+      "quoteStyle": "single"
+    }
+  },
   "linter": {
     "enabled": true,
     "rules": {
       "preset": "recommended",
-      "correctness": { "noUndeclaredDependencies": "error" }
+      "correctness": {
+        "noUndeclaredDependencies": "error"
+      }
     }
-  }
+  },
+  "plugins": ["./biome-plugins/no-type-assertion.grit"]
 }

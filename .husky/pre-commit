@@ -1,0 +1,25 @@
+files=$(git diff --cached --name-only --diff-filter=ACMR)
+[ -z "$files" ] && exit 0
+ts=$(printf '%s\n' "$files" | grep -E '\.ts$' || true)
+out=$(mktemp -d)
+trap 'rm -rf "$out"' EXIT
+
+run() {
+  name=$1; shift
+  "$@" >"$out/$name.log" 2>&1 || echo "$name" >>"$out/failed"
+}
+
+run biome npx biome check --staged --no-errors-on-unmatched &
+run tsc npx tsc --noEmit &
+if [ -n "$ts" ]; then
+  run comments node scripts/check-comments.js $ts &
+  run vitest npx vitest related --run --passWithNoTests $ts &
+fi
+wait
+
+[ -f "$out/failed" ] || exit 0
+for name in $(cat "$out/failed"); do
+  echo "pre-commit: $name failed" >&2
+  cat "$out/$name.log" >&2
+done
+exit 1

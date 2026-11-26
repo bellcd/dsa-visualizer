@@ -1,0 +1,61 @@
+import { spawnSync } from 'node:child_process';
+import { mkdtempSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { expect, test } from 'vitest';
+import { violations } from './check-comments.js';
+
+// NOTE: biome flags a literal dollar-brace in a quoted string, so tests write @{ for it.
+const dollar = (source) => source.replaceAll('@{', '${');
+const script = new URL('./check-comments.js', import.meta.url).pathname;
+
+test('a NOTE: line comment passes', () => {
+  expect(violations('// NOTE: because x\nconst a = 1;')).toEqual([]);
+});
+
+test('a restating line comment fails with its line number', () => {
+  expect(violations('const a = 1;\n// set a to 1\n')).toEqual([
+    { line: 2, text: ' set a to 1' },
+  ]);
+});
+
+test('block and JSDoc comments need NOTE: too', () => {
+  expect(
+    violations('/* NOTE: ok */\n/** NOTE: ok */\n/**\n * NOTE: ok\n */'),
+  ).toEqual([]);
+  expect(violations('/* nope */')).toHaveLength(1);
+  expect(violations('/** nope */')).toHaveLength(1);
+});
+
+test('comment markers inside strings, templates and regexes are ignored', () => {
+  const source = [
+    "const a = 'http://x';",
+    'const b = "/* y */";',
+    'const c = `// @{1 + 1} /* @{`// nested`} */`;',
+    'const d = /\\/\\/[/]/;',
+    'const e = 4 / 2; const f = 8 / 2;',
+  ].join('\n');
+  expect(violations(dollar(source))).toEqual([]);
+});
+
+test('a comment after a template expression is still found', () => {
+  expect(violations(dollar('const a = `@{b}`; // bad'))).toHaveLength(1);
+});
+
+function run(source) {
+  const dir = mkdtempSync(join(tmpdir(), 'check-comments-'));
+  const file = join(dir, 'a.ts');
+  writeFileSync(file, source);
+  return spawnSync('node', [script, file], { encoding: 'utf8' });
+}
+
+test('the script exits non-zero and prints the guidance on a bad comment', () => {
+  const result = run('// restates\nconst a = 1;\n');
+  expect(result.status).toBe(1);
+  expect(result.stderr).toContain('a:1'.replace('a', 'a.ts'));
+  expect(result.stderr).toContain('delete it, or rename and extract');
+});
+
+test('the script exits zero on clean files', () => {
+  expect(run('// NOTE: why\nconst a = 1;\n').status).toBe(0);
+});

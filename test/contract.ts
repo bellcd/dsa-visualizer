@@ -32,15 +32,15 @@ type Ctx<I> = { input: I; index: number; prev: Step | undefined };
 
 type ContractSpec<I, R> = {
   arbitrary: fc.Arbitrary<I>;
-  /** Throws (e.g. via `expect`) when the result is wrong for the input. */
+  // NOTE: Throws (e.g. via `expect`) when the result is wrong for the input.
   check(input: I, result: R): void;
-  /** Throws when an algorithm-specific guarantee fails at a step. */
+  // NOTE: Throws when an algorithm-specific guarantee fails at a step.
   guarantee(step: Step, ctx: Ctx<I>): void;
-  /** Throws when the trace's stats exceed the bound for the input. */
+  // NOTE: Throws when the trace's stats exceed the bound for the input.
   bounds(trace: Trace, input: I): void;
-  /** Edge-case inputs that always run, besides the generated ones. */
+  // NOTE: Edge-case inputs that always run, besides the generated ones.
   examples: I[];
-  /** Exact snapshots for known inputs. */
+  // NOTE: Exact snapshots for known inputs.
   pinned: { input: I; stats: Record<string, number>; result?: R }[];
 };
 
