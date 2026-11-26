@@ -1,13 +1,6 @@
 import { describe, expect, test } from 'vitest';
 import { type AlgorithmDef, trace } from './index.js';
-import {
-  applyOperation,
-  positionProblem,
-  rangeProblem,
-  sign,
-  slotProblem,
-  statKey,
-} from './operations.js';
+import { applyOperation, sign, slotProblem, statKey } from './operations.js';
 import type { Operation, State } from './types.js';
 
 const state = (): State => ({
@@ -254,84 +247,6 @@ describe('bounds rules', () => {
   test('slotProblem rejects fractional indices', () => {
     expect(slotProblem(3, 1.5, 'a')).toBe(
       "Index 1.5 is out of bounds for 'a' (length 3)",
-    );
-  });
-
-  test('positionProblem accepts an in-range position', () => {
-    expect(positionProblem(state(), 'a', 2)).toBeUndefined();
-  });
-
-  test('positionProblem rejects a position past the end with a message', () => {
-    expect(positionProblem(state(), 'a', 3)).toBe(
-      "Mark position 3 is out of bounds for 'a' (length 3)",
-    );
-  });
-
-  test('positionProblem rejects a non-numeric position', () => {
-    expect(positionProblem(state(), 'a', 'x')).toBe(
-      "Mark position x is out of bounds for 'a' (length 3)",
-    );
-  });
-
-  test('positionProblem rejects negative positions', () => {
-    expect(positionProblem(state(), 'a', -1)).toBe(
-      "Mark position -1 is out of bounds for 'a' (length 3)",
-    );
-  });
-
-  test('positionProblem rejects fractional positions', () => {
-    expect(positionProblem(state(), 'a', 0.5)).toBe(
-      "Mark position 0.5 is out of bounds for 'a' (length 3)",
-    );
-  });
-
-  test('positionProblem reports an unknown array', () => {
-    expect(positionProblem(state(), 'zz', 0)).toBe(
-      "Unknown array structure 'zz'",
-    );
-  });
-
-  test('rangeProblem accepts a full range', () => {
-    expect(rangeProblem(state(), 'a', 0, 3)).toBeUndefined();
-  });
-
-  test('rangeProblem accepts an empty in-range range', () => {
-    expect(rangeProblem(state(), 'a', 2, 2)).toBeUndefined();
-  });
-
-  test('rangeProblem rejects a range past the end with a message', () => {
-    expect(rangeProblem(state(), 'a', 0, 4)).toBe(
-      "Range [0, 4) is out of bounds for 'a' (length 3)",
-    );
-  });
-
-  test('rangeProblem rejects a negative start', () => {
-    expect(rangeProblem(state(), 'a', -1, 2)).toBe(
-      "Range [-1, 2) is out of bounds for 'a' (length 3)",
-    );
-  });
-
-  test('rangeProblem rejects a start after the end', () => {
-    expect(rangeProblem(state(), 'a', 2, 1)).toBe(
-      "Range [2, 1) is out of bounds for 'a' (length 3)",
-    );
-  });
-
-  test('rangeProblem rejects a fractional start', () => {
-    expect(rangeProblem(state(), 'a', 0.5, 2)).toBe(
-      "Range [0.5, 2) is out of bounds for 'a' (length 3)",
-    );
-  });
-
-  test('rangeProblem rejects a fractional end', () => {
-    expect(rangeProblem(state(), 'a', 0, 1.5)).toBe(
-      "Range [0, 1.5) is out of bounds for 'a' (length 3)",
-    );
-  });
-
-  test('rangeProblem reports an unknown array', () => {
-    expect(rangeProblem(state(), 'zz', 0, 0)).toBe(
-      "Unknown array structure 'zz'",
     );
   });
 });

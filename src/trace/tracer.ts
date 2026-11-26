@@ -1,16 +1,15 @@
 import { TraceLimitExceeded } from './errors.js';
+import { MarkSet } from './marks.js';
 import {
   applyOperation,
   arrayIn,
-  positionProblem,
-  rangeProblem,
   sign,
   slotProblem,
   statKey,
   unknownArrayMessage,
 } from './operations.js';
 import type {
-  Marks,
+  Item,
   Operation,
   State,
   Step,
@@ -21,6 +20,12 @@ import type {
 export const MAX_STEPS = 10_000;
 
 type ArrayStructure = Extract<Structure, { kind: 'array' }>;
+
+// NOTE: The only reads and recording an ArrayHandle gets from its Tracer.
+type ArrayPort = {
+  items(): readonly Item[];
+  record(operation: Operation): void;
+};
 
 // NOTE: Mulberry32 is deterministic, so a seed reproduces a trace.
 function seededRng(seed: number): () => number {
@@ -35,37 +40,34 @@ function seededRng(seed: number): () => number {
 }
 
 export class ArrayHandle {
-  readonly #tracer: Tracer;
+  readonly #port: ArrayPort;
   readonly #name: string;
 
-  constructor(tracer: Tracer, name: string) {
-    this.#tracer = tracer;
+  constructor(port: ArrayPort, name: string) {
+    this.#port = port;
     this.#name = name;
   }
 
   get length(): number {
-    return this.#tracer.arrayOf(this.#name).items.length;
+    return this.#port.items().length;
   }
 
   get(i: number): number {
-    return this.#tracer.itemAt(this.#name, i).value;
+    const items = this.#port.items();
+    const problem = slotProblem(items.length, i, this.#name);
+    if (problem !== undefined) throw new RangeError(problem);
+    return items[i].value;
   }
 
   compare(i: number, j: number): -1 | 0 | 1 {
     const result = sign(this.get(i) - this.get(j));
-    this.#tracer.record({
-      op: 'compare',
-      target: this.#name,
-      i,
-      j,
-      result,
-    });
+    this.#port.record({ op: 'compare', target: this.#name, i, j, result });
     return result;
   }
 
   compareValue(i: number, value: number): -1 | 0 | 1 {
     const result = sign(this.get(i) - value);
-    this.#tracer.record({
+    this.#port.record({
       op: 'compareValue',
       target: this.#name,
       i,
@@ -76,16 +78,16 @@ export class ArrayHandle {
   }
 
   swap(i: number, j: number): void {
-    this.#tracer.record({ op: 'swap', target: this.#name, i, j });
+    this.#port.record({ op: 'swap', target: this.#name, i, j });
   }
 
   set(i: number, value: number): void {
     const prev = this.get(i);
-    this.#tracer.record({ op: 'set', target: this.#name, i, value, prev });
+    this.#port.record({ op: 'set', target: this.#name, i, value, prev });
   }
 
   values(): number[] {
-    return this.#tracer.arrayOf(this.#name).items.map((item) => item.value);
+    return this.#port.items().map((item) => item.value);
   }
 }
 
@@ -111,7 +113,9 @@ export class Tracer {
   #state: State = {};
   readonly #steps: Step[] = [];
   readonly #stats = { compares: 0, swaps: 0, sets: 0 };
-  #marks: Marks = { pointers: {}, ranges: {}, tags: {}, vars: {} };
+  readonly #marks = new MarkSet(
+    (target) => arrayIn(this.#state, target)?.items.length,
+  );
   #line: number | undefined;
   #note: string | undefined;
   #depth = 0;
@@ -130,7 +134,7 @@ export class Tracer {
 
   #freshId = (): number => this.#nextId++;
 
-  arrayOf(name: string): ArrayStructure {
+  #arrayOf(name: string): ArrayStructure {
     const structure = arrayIn(this.#state, name);
     if (structure === undefined) {
       throw new Error(unknownArrayMessage(name));
@@ -138,19 +142,18 @@ export class Tracer {
     return structure;
   }
 
-  itemAt(name: string, i: number) {
-    const items = this.arrayOf(name).items;
-    const problem = slotProblem(items.length, i, name);
-    if (problem !== undefined) throw new RangeError(problem);
-    return items[i];
-  }
-
   array(name: string): ArrayHandle {
-    this.arrayOf(name);
-    return new ArrayHandle(this, name);
+    this.#arrayOf(name);
+    return new ArrayHandle(
+      {
+        items: () => this.#arrayOf(name).items,
+        record: (operation) => this.#record(operation),
+      },
+      name,
+    );
   }
 
-  record(operation: Operation): void {
+  #record(operation: Operation): void {
     const applied = applyOperation(this.#state, operation, this.#freshId);
     if (!applied.ok) throw new RangeError(applied.problem);
     const key = statKey(operation);
@@ -165,7 +168,7 @@ export class Tracer {
     const step: Step = {
       operation,
       state: structuredClone(this.#state),
-      marks: structuredClone(this.#marks),
+      marks: this.#marks.snapshot(),
     };
     if (this.#line !== undefined) step.line = this.#line;
     if (this.#note !== undefined) step.note = this.#note;
@@ -174,55 +177,28 @@ export class Tracer {
     this.#steps.push(step);
   }
 
-  #checkAt(target: string, at: number | string): void {
-    this.arrayOf(target);
-    const problem = positionProblem(this.#state, target, at);
-    if (problem !== undefined) throw new RangeError(problem);
-  }
-
   pointer(name: string, target: string, at: number | string | null): void {
-    if (at === null) {
-      this.arrayOf(target);
-      delete this.#marks.pointers[name];
-      return;
-    }
-    this.#checkAt(target, at);
-    this.#marks.pointers[name] = { target, at };
+    this.#marks.pointer(name, target, at);
   }
 
   range(name: string, target: string, from: number, to: number): void {
-    this.arrayOf(target);
-    const problem = rangeProblem(this.#state, target, from, to);
-    if (problem !== undefined) throw new RangeError(problem);
-    this.#marks.ranges[name] = { target, from, to };
+    this.#marks.range(name, target, from, to);
   }
 
   clearRange(name: string): void {
-    delete this.#marks.ranges[name];
+    this.#marks.clearRange(name);
   }
 
   tag(target: string, at: number | string, tag: string): void {
-    this.#checkAt(target, at);
-    const list = this.#marks.tags[tag] ?? [];
-    if (!list.some((entry) => entry.target === target && entry.at === at)) {
-      list.push({ target, at, tag });
-    }
-    this.#marks.tags[tag] = list;
+    this.#marks.tag(target, at, tag);
   }
 
   untag(target: string, at: number | string, tag: string): void {
-    this.arrayOf(target);
-    const list = this.#marks.tags[tag];
-    if (list === undefined) return;
-    const kept = list.filter(
-      (entry) => !(entry.target === target && entry.at === at),
-    );
-    if (kept.length === 0) delete this.#marks.tags[tag];
-    else this.#marks.tags[tag] = kept;
+    this.#marks.untag(target, at, tag);
   }
 
   setVar(name: string, value: VarValue): void {
-    this.#marks.vars[name] = value;
+    this.#marks.setVar(name, value);
   }
 
   line(index: number): void {

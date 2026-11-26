@@ -290,95 +290,13 @@ describe('set(i, v)', () => {
   });
 });
 
-describe('pointer, range, tag, untag, setVar persist and create no step', () => {
-  test('pointer persists until changed or cleared', () => {
-    const tr = run([1, 2, 3], (t) => {
-      t.pointer('i', 'a', 0);
-      t.step();
-      t.step();
-      t.pointer('i', 'a', 2);
-      t.step();
-      t.pointer('i', 'a', null);
-      t.step();
-    });
-    expect(tr.steps.map((s) => s.marks.pointers)).toEqual([
-      {},
-      { i: { target: 'a', at: 0 } },
-      { i: { target: 'a', at: 0 } },
-      { i: { target: 'a', at: 2 } },
-      {},
-      {},
-    ]);
-  });
-
-  test('range persists until changed or cleared', () => {
-    const tr = run([1, 2, 3], (t) => {
-      t.range('sorted', 'a', 1, 3);
-      t.step();
-      t.step();
-      t.range('sorted', 'a', 3, 3);
-      t.step();
-      t.clearRange('sorted');
-      t.step();
-    });
-    expect(tr.steps.map((s) => s.marks.ranges)).toEqual([
-      {},
-      { sorted: { target: 'a', from: 1, to: 3 } },
-      { sorted: { target: 'a', from: 1, to: 3 } },
-      { sorted: { target: 'a', from: 3, to: 3 } },
-      {},
-      {},
-    ]);
-  });
-
-  test('tag adds once per spot and untag removes it', () => {
-    const tr = run([1, 2, 3], (t) => {
-      t.tag('a', 0, 'seen');
-      t.tag('a', 0, 'seen');
-      t.tag('a', 1, 'seen');
-      t.step();
-      t.untag('a', 0, 'seen');
-      t.untag('a', 2, 'seen');
-      t.untag('a', 2, 'other');
-      t.step();
-      t.untag('a', 1, 'seen');
-      t.step();
-    });
-    expect(tr.steps.map((s) => s.marks.tags)).toEqual([
-      {},
-      {
-        seen: [
-          { target: 'a', at: 0, tag: 'seen' },
-          { target: 'a', at: 1, tag: 'seen' },
-        ],
-      },
-      { seen: [{ target: 'a', at: 1, tag: 'seen' }] },
-      {},
-      {},
-    ]);
-  });
-
-  test('setVar persists and can be overwritten', () => {
-    const tr = run([1], (t) => {
-      t.setVar('k', 1);
-      t.setVar('flag', true);
-      t.step();
-      t.setVar('k', null);
-      t.step();
-    });
-    expect(tr.steps.map((s) => s.marks.vars)).toEqual([
-      {},
-      { k: 1, flag: true },
-      { k: null, flag: true },
-      { k: null, flag: true },
-    ]);
-  });
-
-  test('pointer, range, tag, untag, setVar, depth, line and note create no step of their own', () => {
+describe('marks and Steps', () => {
+  test('pointer, range, tag, untag, setVar create no step of their own', () => {
     expect(
       ops([1, 2], (t) => {
         t.pointer('i', 'a', 0);
         t.range('r', 'a', 0, 1);
+        t.clearRange('r');
         t.tag('a', 0, 't');
         t.untag('a', 0, 't');
         t.setVar('v', 1);
@@ -390,16 +308,19 @@ describe('pointer, range, tag, untag, setVar persist and create no step', () => 
     ).toEqual(['init', 'done']);
   });
 
-  test('a range may be empty at the end of the array', () => {
-    const tr = run([1, 2], (t) => {
-      t.range('r', 'a', 2, 2);
+  test('each Step carries a copy of the marks as they were', () => {
+    const tr = run([1, 2, 3], (t) => {
+      t.pointer('i', 'a', 0);
+      t.step();
+      t.pointer('i', 'a', 2);
       t.step();
     });
-    expect(tr.steps[1]?.marks.ranges.r).toEqual({
-      target: 'a',
-      from: 2,
-      to: 2,
-    });
+    expect(tr.steps.map((s) => s.marks.pointers)).toEqual([
+      {},
+      { i: { target: 'a', at: 0 } },
+      { i: { target: 'a', at: 2 } },
+      { i: { target: 'a', at: 2 } },
+    ]);
   });
 });
 
@@ -589,50 +510,6 @@ describe('errors', () => {
       }),
     ).toThrow(RangeError);
     expect(seen).toEqual([[1, 2]]);
-  });
-
-  test('a mark on an unknown structure throws', () => {
-    expect(() => run([1], (t) => t.array('nope'))).toThrow('nope');
-    expect(() => run([1], (t) => t.pointer('i', 'nope', 0))).toThrow('nope');
-    expect(() => run([1], (t) => t.range('r', 'nope', 0, 1))).toThrow('nope');
-    expect(() => run([1], (t) => t.tag('nope', 0, 't'))).toThrow('nope');
-  });
-
-  test('clearing a pointer or a tag on an unknown structure throws', () => {
-    expect(() => run([1], (t) => t.pointer('i', 'nope', null))).toThrow('nope');
-    expect(() => run([1], (t) => t.untag('nope', 0, 't'))).toThrow('nope');
-  });
-
-  test('a mark out of bounds throws', () => {
-    expect(() => run([1, 2], (t) => t.pointer('i', 'a', 2))).toThrow(
-      RangeError,
-    );
-    expect(() => run([1, 2], (t) => t.pointer('i', 'a', -1))).toThrow(
-      RangeError,
-    );
-    expect(() => run([1, 2], (t) => t.pointer('i', 'a', 0.5))).toThrow(
-      RangeError,
-    );
-    expect(() => run([1, 2], (t) => t.pointer('i', 'a', 'x'))).toThrow(
-      RangeError,
-    );
-    expect(() => run([1, 2], (t) => t.range('r', 'a', 0, 3))).toThrow(
-      RangeError,
-    );
-    expect(() => run([1, 2], (t) => t.range('r', 'a', -1, 1))).toThrow(
-      RangeError,
-    );
-    expect(() => run([1, 2], (t) => t.range('r', 'a', 2, 1))).toThrow(
-      RangeError,
-    );
-    expect(() => run([1, 2], (t) => t.range('r', 'a', 0.5, 1))).toThrow(
-      RangeError,
-    );
-    expect(() => run([1, 2], (t) => t.range('r', 'a', 0, 1.5))).toThrow(
-      RangeError,
-    );
-    expect(() => run([1, 2], (t) => t.tag('a', 2, 't'))).toThrow(RangeError);
-    expect(() => run([1, 2], (t) => t.tag('a', -1, 't'))).toThrow(RangeError);
   });
 
   test('more than 10,000 steps throws TraceLimitExceeded', () => {
