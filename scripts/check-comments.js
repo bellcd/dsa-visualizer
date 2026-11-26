@@ -8,7 +8,7 @@ const MESSAGE =
 const SKIP_DIRS = new Set(['node_modules', '.git', 'dist', '.stryker-tmp']);
 const REGEX_PRECEDERS = /[)\]}\w$]/;
 
-export function findComments(source) {
+function findComments(source) {
   const found = [];
   const templateDepths = [];
   let braceDepth = 0;
@@ -43,7 +43,7 @@ export function findComments(source) {
       lastSignificant = c;
     } else if (
       c === '`' ||
-      (c === '}' && templateDepths.at(-1) === braceDepth)
+      (c === '}' && templateDepths[templateDepths.length - 1] === braceDepth)
     ) {
       if (c === '}') templateDepths.pop();
       let j = i + 1;

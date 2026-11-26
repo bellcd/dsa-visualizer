@@ -52,7 +52,7 @@ function run(source) {
 test('the script exits non-zero and prints the guidance on a bad comment', () => {
   const result = run('// restates\nconst a = 1;\n');
   expect(result.status).toBe(1);
-  expect(result.stderr).toContain('a:1'.replace('a', 'a.ts'));
+  expect(result.stderr).toContain('a.ts:1');
   expect(result.stderr).toContain('delete it, or rename and extract');
 });
 
