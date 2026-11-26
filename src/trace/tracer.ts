@@ -1,5 +1,22 @@
 import { TraceLimitExceeded } from './errors.js';
-import type { Marks, Operation, Step, Structure, VarValue } from './types.js';
+import {
+  applyOperation,
+  arrayIn,
+  positionProblem,
+  rangeProblem,
+  sign,
+  slotProblem,
+  statKey,
+  unknownArrayMessage,
+} from './operations.js';
+import type {
+  Marks,
+  Operation,
+  State,
+  Step,
+  Structure,
+  VarValue,
+} from './types.js';
 
 export const MAX_STEPS = 10_000;
 
@@ -15,12 +32,6 @@ function seededRng(seed: number): () => number {
     t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
     return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
   };
-}
-
-function sign(n: number): -1 | 0 | 1 {
-  if (n < 0) return -1;
-  if (n > 0) return 1;
-  return 0;
 }
 
 export class ArrayHandle {
@@ -65,18 +76,11 @@ export class ArrayHandle {
   }
 
   swap(i: number, j: number): void {
-    const items = this.#tracer.arrayOf(this.#name).items;
-    const a = this.#tracer.itemAt(this.#name, i);
-    const b = this.#tracer.itemAt(this.#name, j);
-    items[i] = b;
-    items[j] = a;
     this.#tracer.record({ op: 'swap', target: this.#name, i, j });
   }
 
   set(i: number, value: number): void {
-    const items = this.#tracer.arrayOf(this.#name).items;
-    const prev = this.#tracer.itemAt(this.#name, i).value;
-    items[i] = { id: this.#tracer.freshId(), value };
+    const prev = this.get(i);
     this.#tracer.record({ op: 'set', target: this.#name, i, value, prev });
   }
 
@@ -104,7 +108,7 @@ export type ArrayTracer = Pick<
 
 export class Tracer {
   readonly rng: () => number;
-  readonly #state: Record<string, Structure> = {};
+  #state: State = {};
   readonly #steps: Step[] = [];
   readonly #stats = { compares: 0, swaps: 0, sets: 0 };
   #marks: Marks = { pointers: {}, ranges: {}, tags: {}, vars: {} };
@@ -118,33 +122,27 @@ export class Tracer {
     for (const [name, values] of Object.entries(initial)) {
       this.#state[name] = {
         kind: 'array',
-        items: values.map((value) => ({ id: this.freshId(), value })),
+        items: values.map((value) => ({ id: this.#freshId(), value })),
       };
     }
-    this.#push({ op: 'init' }, false);
+    this.#push({ op: 'init' }, this.#state, false);
   }
 
-  freshId(): number {
-    return this.#nextId++;
-  }
+  #freshId = (): number => this.#nextId++;
 
   arrayOf(name: string): ArrayStructure {
-    const structure = this.#state[name];
-    if (structure === undefined || structure.kind !== 'array') {
-      throw new Error(`Unknown array structure '${name}'`);
+    const structure = arrayIn(this.#state, name);
+    if (structure === undefined) {
+      throw new Error(unknownArrayMessage(name));
     }
     return structure;
   }
 
   itemAt(name: string, i: number) {
     const items = this.arrayOf(name).items;
-    const item = Number.isInteger(i) ? items[i] : undefined;
-    if (item === undefined) {
-      throw new RangeError(
-        `Index ${i} is out of bounds for '${name}' (length ${items.length})`,
-      );
-    }
-    return item;
+    const problem = slotProblem(items.length, i, name);
+    if (problem !== undefined) throw new RangeError(problem);
+    return items[i];
   }
 
   array(name: string): ArrayHandle {
@@ -153,17 +151,15 @@ export class Tracer {
   }
 
   record(operation: Operation): void {
-    if (operation.op === 'compare' || operation.op === 'compareValue') {
-      this.#stats.compares++;
-    } else if (operation.op === 'swap') {
-      this.#stats.swaps++;
-    } else if (operation.op === 'set') {
-      this.#stats.sets++;
-    }
-    this.#push(operation, true);
+    const applied = applyOperation(this.#state, operation, this.#freshId);
+    if (!applied.ok) throw new RangeError(applied.problem);
+    const key = statKey(operation);
+    if (key !== undefined) this.#stats[key]++;
+    this.#push(operation, applied.state, true);
   }
 
-  #push(operation: Operation, reserveDone: boolean): void {
+  #push(operation: Operation, state: State, reserveDone: boolean): void {
+    this.#state = state;
     const room = reserveDone ? MAX_STEPS - 1 : MAX_STEPS;
     if (this.#steps.length >= room) throw new TraceLimitExceeded(MAX_STEPS);
     const step: Step = {
@@ -179,17 +175,9 @@ export class Tracer {
   }
 
   #checkAt(target: string, at: number | string): void {
-    const length = this.arrayOf(target).items.length;
-    if (
-      typeof at !== 'number' ||
-      !Number.isInteger(at) ||
-      at < 0 ||
-      at >= length
-    ) {
-      throw new RangeError(
-        `Mark position ${String(at)} is out of bounds for '${target}' (length ${length})`,
-      );
-    }
+    this.arrayOf(target);
+    const problem = positionProblem(this.#state, target, at);
+    if (problem !== undefined) throw new RangeError(problem);
   }
 
   pointer(name: string, target: string, at: number | string | null): void {
@@ -203,18 +191,9 @@ export class Tracer {
   }
 
   range(name: string, target: string, from: number, to: number): void {
-    const length = this.arrayOf(target).items.length;
-    if (
-      !Number.isInteger(from) ||
-      !Number.isInteger(to) ||
-      from < 0 ||
-      from > to ||
-      to > length
-    ) {
-      throw new RangeError(
-        `Range [${from}, ${to}) is out of bounds for '${target}' (length ${length})`,
-      );
-    }
+    this.arrayOf(target);
+    const problem = rangeProblem(this.#state, target, from, to);
+    if (problem !== undefined) throw new RangeError(problem);
     this.#marks.ranges[name] = { target, from, to };
   }
 
@@ -255,7 +234,7 @@ export class Tracer {
   }
 
   step(): void {
-    this.#push({ op: 'mark' }, true);
+    this.#push({ op: 'mark' }, this.#state, true);
   }
 
   enter(): void {
@@ -268,7 +247,7 @@ export class Tracer {
   }
 
   finish(): { steps: Step[]; stats: Record<string, number> } {
-    this.#push({ op: 'done' }, false);
+    this.#push({ op: 'done' }, this.#state, false);
     return { steps: this.#steps, stats: { ...this.#stats } };
   }
 }
