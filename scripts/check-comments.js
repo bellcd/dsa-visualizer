@@ -78,28 +78,28 @@ function scanRegex(scan) {
   scan.lastSignificant = '/';
 }
 
-function scanOther(scan, c) {
-  if (c === '{') scan.braceDepth++;
-  if (c === '}') scan.braceDepth--;
-  if (!/\s/.test(c)) scan.lastSignificant = c;
+function scanOther(scan, character) {
+  if (character === '{') scan.braceDepth++;
+  if (character === '}') scan.braceDepth--;
+  if (!/\s/.test(character)) scan.lastSignificant = character;
   advance(scan, scan.i + 1);
 }
 
 function scanNext(scan) {
-  const c = scan.source[scan.i];
+  const character = scan.source[scan.i];
   const next = scan.source[scan.i + 1];
   const closesExpression =
-    c === '}' &&
+    character === '}' &&
     scan.templateDepths[scan.templateDepths.length - 1] === scan.braceDepth;
 
-  if (c === '/' && next === '/') scanLineComment(scan);
-  else if (c === '/' && next === '*') scanBlockComment(scan);
-  else if (c === '"' || c === "'") scanString(scan, c);
+  if (character === '/' && next === '/') scanLineComment(scan);
+  else if (character === '/' && next === '*') scanBlockComment(scan);
+  else if (character === '"' || character === "'") scanString(scan, character);
   else if (closesExpression) resumeTemplate(scan);
-  else if (c === '`') scanTemplate(scan);
-  else if (c === '/' && !REGEX_PRECEDERS.test(scan.lastSignificant)) {
+  else if (character === '`') scanTemplate(scan);
+  else if (character === '/' && !REGEX_PRECEDERS.test(scan.lastSignificant)) {
     scanRegex(scan);
-  } else scanOther(scan, c);
+  } else scanOther(scan, character);
 }
 
 function findComments(source) {

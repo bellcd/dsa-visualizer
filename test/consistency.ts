@@ -186,10 +186,11 @@ function sortedIds(state: State): Record<string, number[]> {
 
 type Counts = { compares: number; swaps: number; sets: number };
 
-function countOperation(op: Operation['op'], counts: Counts) {
-  if (op === 'compare' || op === 'compareValue') counts.compares++;
-  else if (op === 'swap') counts.swaps++;
-  else if (op === 'set') counts.sets++;
+function countOperation(operation: Operation, counts: Counts) {
+  const kind = operation.op;
+  if (kind === 'compare' || kind === 'compareValue') counts.compares++;
+  else if (kind === 'swap') counts.swaps++;
+  else if (kind === 'set') counts.sets++;
 }
 
 function trackIds(
@@ -252,7 +253,7 @@ export function checkConsistency(trace: Trace): string[] {
   for (const [k, next] of trace.steps.entries()) {
     if (k === 0) continue;
     const at = `step ${k}`;
-    countOperation(next.operation.op, counts);
+    countOperation(next.operation, counts);
     sawSet ||= next.operation.op === 'set';
     const expected = applyOperation(prev, next, seen, problems, at);
     if (JSON.stringify(expected) !== JSON.stringify(next.state)) {

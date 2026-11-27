@@ -62,12 +62,12 @@ type Context = {
 function applyCompare(
   operation: Extract<Operation, { op: 'compare' | 'compareValue' }>,
   first: Item,
-  context: Context,
+  { state, slot, outOfBounds }: Pick<Context, 'state' | 'slot' | 'outOfBounds'>,
 ): Applied {
   let other: { value: number };
   if (operation.op === 'compare') {
-    const second = context.slot(operation.j);
-    if (second === undefined) return context.outOfBounds(operation.j);
+    const second = slot(operation.j);
+    if (second === undefined) return outOfBounds(operation.j);
     other = second;
   } else {
     other = { value: operation.value };
@@ -78,26 +78,31 @@ function applyCompare(
       problem: `${operation.op} result ${operation.result} is wrong`,
     };
   }
-  return { ok: true, state: context.state };
+  return { ok: true, state };
 }
 
 function applySwap(
   operation: Extract<Operation, { op: 'swap' }>,
   first: Item,
-  context: Context,
+  {
+    items,
+    slot,
+    outOfBounds,
+    withItems,
+  }: Pick<Context, 'items' | 'slot' | 'outOfBounds' | 'withItems'>,
 ): Applied {
-  const second = context.slot(operation.j);
-  if (second === undefined) return context.outOfBounds(operation.j);
-  const next = [...context.items];
+  const second = slot(operation.j);
+  if (second === undefined) return outOfBounds(operation.j);
+  const next = [...items];
   next[operation.i] = second;
   next[operation.j] = first;
-  return context.withItems(next);
+  return withItems(next);
 }
 
 function applySet(
   operation: Extract<Operation, { op: 'set' }>,
   first: Item,
-  context: Context,
+  { items, withItems }: Pick<Context, 'items' | 'withItems'>,
   freshId: () => number,
 ): Applied {
   if (first.value !== operation.prev) {
@@ -106,9 +111,9 @@ function applySet(
       problem: `set prev ${operation.prev} but slot held ${first.value}`,
     };
   }
-  const next = [...context.items];
+  const next = [...items];
   next[operation.i] = { id: freshId(), value: operation.value };
-  return context.withItems(next);
+  return withItems(next);
 }
 
 export function applyOperation(
