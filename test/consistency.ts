@@ -199,9 +199,9 @@ function trackIds(
   seen: Map<string, Set<number>>,
   problems: string[],
 ) {
-  for (const [name, s] of Object.entries(step.state)) {
-    if (s.kind !== 'array') continue;
-    const ids = s.items.map((item) => item.id);
+  for (const [name, structure] of Object.entries(step.state)) {
+    if (structure.kind !== 'array') continue;
+    const ids = structure.items.map((item) => item.id);
     if (new Set(ids).size !== ids.length) {
       problems.push(`${at}: duplicate id in '${name}'`);
     }

@@ -42,11 +42,6 @@ function scanString(scan, quote) {
   scan.lastSignificant = quote;
 }
 
-function resumeTemplate(scan) {
-  scan.templateDepths.pop();
-  scanTemplate(scan);
-}
-
 function scanTemplate(scan) {
   const { source, templateDepths } = scan;
   let j = scan.i + 1;
@@ -61,6 +56,11 @@ function scanTemplate(scan) {
   if (opensExpression) templateDepths.push(scan.braceDepth);
   advance(scan, opensExpression ? j + 2 : j + 1);
   scan.lastSignificant = opensExpression ? '{' : '`';
+}
+
+function resumeTemplate(scan) {
+  scan.templateDepths.pop();
+  scanTemplate(scan);
 }
 
 function scanRegex(scan) {
