@@ -9,10 +9,6 @@ test('npm run lint:strict exits 0', () => {
   expect(lint('lint:strict').status).toBe(0);
 });
 
-test('npm run lint:all exits non-zero on a rule missing from strict', () => {
-  const result = lint('lint:all');
-  expect(result.status).not.toBe(0);
-  expect(result.stdout + result.stderr).toContain(
-    'lint/complexity/noExcessiveCognitiveComplexity',
-  );
+test('npm run lint:all exits 0 while no rule is waiting for promotion', () => {
+  expect(lint('lint:all').status).toBe(0);
 });

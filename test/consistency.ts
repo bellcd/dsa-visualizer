@@ -1,4 +1,10 @@
-import type { Item, State, Step, Trace } from '../src/trace/index.js';
+import type {
+  Item,
+  Operation,
+  State,
+  Step,
+  Trace,
+} from '../src/trace/index.js';
 
 const sign = (n: number): -1 | 0 | 1 => {
   if (n < 0) return -1;
@@ -11,6 +17,66 @@ const byNumber = (a: number, b: number) => a - b;
 function itemsOf(state: State, target: string): Item[] | undefined {
   const s = state[target];
   return s?.kind === 'array' ? s.items : undefined;
+}
+
+type Expectation = {
+  next: Step;
+  items: Item[];
+  seen: Map<string, Set<number>>;
+  problems: string[];
+  at: string;
+};
+
+type Slot = (i: number) => Item | undefined;
+
+function expectCompare(
+  op: Extract<Operation, { op: 'compare' | 'compareValue' }>,
+  slot: Slot,
+  { problems, at }: Expectation,
+) {
+  const a = slot(op.i);
+  const b = op.op === 'compare' ? slot(op.j) : { value: op.value };
+  if (a === undefined || b === undefined) {
+    problems.push(`${at}: ${op.op} index out of bounds`);
+  } else if (sign(a.value - b.value) !== op.result) {
+    problems.push(`${at}: ${op.op} result ${op.result} is wrong`);
+  }
+}
+
+function expectSwap(
+  op: Extract<Operation, { op: 'swap' }>,
+  slot: Slot,
+  { items, problems, at }: Expectation,
+) {
+  const a = slot(op.i);
+  const b = slot(op.j);
+  if (a === undefined || b === undefined) {
+    problems.push(`${at}: swap index out of bounds`);
+    return;
+  }
+  items[op.i] = b;
+  items[op.j] = a;
+}
+
+function expectSet(
+  op: Extract<Operation, { op: 'set' }>,
+  slot: Slot,
+  { next, items, seen, problems, at }: Expectation,
+) {
+  const old = slot(op.i);
+  if (old === undefined) {
+    problems.push(`${at}: set index out of bounds`);
+    return;
+  }
+  if (old.value !== op.prev) {
+    problems.push(`${at}: set prev ${op.prev} but slot held ${old.value}`);
+  }
+  const id = itemsOf(next.state, op.target)?.[op.i]?.id;
+  if (id === undefined || seen.get(op.target)?.has(id)) {
+    problems.push(`${at}: set did not give the slot a new id`);
+  } else {
+    items[op.i] = { id, value: op.value };
+  }
 }
 
 // NOTE: `seen` tracks all past ids, since a `set` must mint an id never used.
@@ -33,39 +99,14 @@ function applyOperation(
     problems.push(`${at}: unknown array '${op.target}'`);
     return expected;
   }
-  const slot = (i: number) => (Number.isInteger(i) ? items[i] : undefined);
+  const slot: Slot = (i) => (Number.isInteger(i) ? items[i] : undefined);
+  const expectation: Expectation = { next, items, seen, problems, at };
   if (op.op === 'compare' || op.op === 'compareValue') {
-    const a = slot(op.i);
-    const b = op.op === 'compare' ? slot(op.j) : { value: op.value };
-    if (a === undefined || b === undefined) {
-      problems.push(`${at}: ${op.op} index out of bounds`);
-    } else if (sign(a.value - b.value) !== op.result) {
-      problems.push(`${at}: ${op.op} result ${op.result} is wrong`);
-    }
+    expectCompare(op, slot, expectation);
   } else if (op.op === 'swap') {
-    const a = slot(op.i);
-    const b = slot(op.j);
-    if (a === undefined || b === undefined) {
-      problems.push(`${at}: swap index out of bounds`);
-    } else {
-      items[op.i] = b;
-      items[op.j] = a;
-    }
+    expectSwap(op, slot, expectation);
   } else {
-    const old = slot(op.i);
-    if (old === undefined) {
-      problems.push(`${at}: set index out of bounds`);
-    } else {
-      if (old.value !== op.prev) {
-        problems.push(`${at}: set prev ${op.prev} but slot held ${old.value}`);
-      }
-      const id = itemsOf(next.state, op.target)?.[op.i]?.id;
-      if (id === undefined || seen.get(op.target)?.has(id)) {
-        problems.push(`${at}: set did not give the slot a new id`);
-      } else {
-        items[op.i] = { id, value: op.value };
-      }
-    }
+    expectSet(op, slot, expectation);
   }
   return expected;
 }
@@ -138,68 +179,33 @@ function sortedIds(state: State): Record<string, number[]> {
   return out;
 }
 
-export function checkConsistency(trace: Trace): string[] {
-  const problems: string[] = [];
-  const { steps } = trace;
+type Counts = { compares: number; swaps: number; sets: number };
 
-  if (!isPlainJson(trace) || !roundTrips(trace)) {
-    problems.push('trace does not round-trip through JSON');
-  }
-  if (steps[0]?.operation.op !== 'init') {
-    problems.push('first step is not init');
-  }
-  if (steps.at(-1)?.operation.op !== 'done') {
-    problems.push('last step is not done');
-  }
-  const first = steps[0];
-  if (first === undefined) return problems;
+function countOperation(op: Operation['op'], counts: Counts) {
+  if (op === 'compare' || op === 'compareValue') counts.compares++;
+  else if (op === 'swap') counts.swaps++;
+  else if (op === 'set') counts.sets++;
+}
 
-  const counts = { compares: 0, swaps: 0, sets: 0 };
-  const seen = new Map<string, Set<number>>();
-  const initialIds = JSON.stringify(sortedIds(first.state));
-  let sawSet = false;
-
-  const trackIds = (step: Step, at: string) => {
-    for (const [name, s] of Object.entries(step.state)) {
-      if (s.kind !== 'array') continue;
-      const ids = s.items.map((item) => item.id);
-      if (new Set(ids).size !== ids.length) {
-        problems.push(`${at}: duplicate id in '${name}'`);
-      }
-      const known = seen.get(name) ?? new Set<number>();
-      for (const id of ids) known.add(id);
-      seen.set(name, known);
+function trackIds(
+  step: Step,
+  at: string,
+  seen: Map<string, Set<number>>,
+  problems: string[],
+) {
+  for (const [name, s] of Object.entries(step.state)) {
+    if (s.kind !== 'array') continue;
+    const ids = s.items.map((item) => item.id);
+    if (new Set(ids).size !== ids.length) {
+      problems.push(`${at}: duplicate id in '${name}'`);
     }
-  };
-
-  trackIds(first, 'step 0');
-  checkMarks(first, 'step 0', problems);
-
-  let prev = first;
-  for (const [k, next] of steps.entries()) {
-    if (k === 0) continue;
-    const at = `step ${k}`;
-    const op = next.operation.op;
-    if (op === 'compare' || op === 'compareValue') counts.compares++;
-    else if (op === 'swap') counts.swaps++;
-    else if (op === 'set') {
-      counts.sets++;
-      sawSet = true;
-    }
-    const expected = applyOperation(prev, next, seen, problems, at);
-    if (JSON.stringify(expected) !== JSON.stringify(next.state)) {
-      problems.push(
-        `${at}: state is not the previous state plus the operation`,
-      );
-    }
-    trackIds(next, at);
-    checkMarks(next, at, problems);
-    if (!sawSet && JSON.stringify(sortedIds(next.state)) !== initialIds) {
-      problems.push(`${at}: ids are not a permutation of the initial ids`);
-    }
-    prev = next;
+    const known = seen.get(name) ?? new Set<number>();
+    for (const id of ids) known.add(id);
+    seen.set(name, known);
   }
+}
 
+function checkStats(trace: Trace, counts: Counts, problems: string[]) {
   for (const key of ['compares', 'swaps', 'sets'] as const) {
     if (trace.stats[key] !== counts[key]) {
       problems.push(
@@ -209,5 +215,54 @@ export function checkConsistency(trace: Trace): string[] {
   }
   const extra = Object.keys(trace.stats).filter((k) => !(k in counts));
   if (extra.length > 0) problems.push(`unexpected stats: ${extra.join(', ')}`);
+}
+
+function checkShape(trace: Trace, problems: string[]) {
+  if (!isPlainJson(trace) || !roundTrips(trace)) {
+    problems.push('trace does not round-trip through JSON');
+  }
+  if (trace.steps[0]?.operation.op !== 'init') {
+    problems.push('first step is not init');
+  }
+  if (trace.steps.at(-1)?.operation.op !== 'done') {
+    problems.push('last step is not done');
+  }
+}
+
+export function checkConsistency(trace: Trace): string[] {
+  const problems: string[] = [];
+  checkShape(trace, problems);
+  const first = trace.steps[0];
+  if (first === undefined) return problems;
+
+  const counts: Counts = { compares: 0, swaps: 0, sets: 0 };
+  const seen = new Map<string, Set<number>>();
+  const initialIds = JSON.stringify(sortedIds(first.state));
+  let sawSet = false;
+
+  trackIds(first, 'step 0', seen, problems);
+  checkMarks(first, 'step 0', problems);
+
+  let prev = first;
+  for (const [k, next] of trace.steps.entries()) {
+    if (k === 0) continue;
+    const at = `step ${k}`;
+    countOperation(next.operation.op, counts);
+    sawSet ||= next.operation.op === 'set';
+    const expected = applyOperation(prev, next, seen, problems, at);
+    if (JSON.stringify(expected) !== JSON.stringify(next.state)) {
+      problems.push(
+        `${at}: state is not the previous state plus the operation`,
+      );
+    }
+    trackIds(next, at, seen, problems);
+    checkMarks(next, at, problems);
+    if (!sawSet && JSON.stringify(sortedIds(next.state)) !== initialIds) {
+      problems.push(`${at}: ids are not a permutation of the initial ids`);
+    }
+    prev = next;
+  }
+
+  checkStats(trace, counts, problems);
   return problems;
 }
