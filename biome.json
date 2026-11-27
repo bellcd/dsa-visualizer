@@ -10,7 +10,8 @@
     "enabled": true,
     "rules": {
       "preset": "recommended",
-      "correctness": { "noUndeclaredDependencies": "error" }
+      "correctness": { "noUndeclaredDependencies": "error" },
+      "complexity": { "noExcessiveCognitiveComplexity": "error" }
     }
   },
   "plugins": ["./biome-plugins/no-type-assertion.grit"]

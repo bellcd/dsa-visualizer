@@ -51,6 +51,69 @@ export function statKey(operation: Operation): StatKey | undefined {
   }
 }
 
+type Context = {
+  state: State;
+  items: Item[];
+  slot: (i: number) => Item | undefined;
+  outOfBounds: (i: number) => Applied;
+  withItems: (next: Item[]) => Applied;
+};
+
+function applyCompare(
+  operation: Extract<Operation, { op: 'compare' | 'compareValue' }>,
+  first: Item,
+  context: Pick<Context, 'state' | 'slot' | 'outOfBounds'>,
+): Applied {
+  const { state, slot, outOfBounds } = context;
+  let other: { value: number };
+  if (operation.op === 'compare') {
+    const second = slot(operation.j);
+    if (second === undefined) return outOfBounds(operation.j);
+    other = second;
+  } else {
+    other = { value: operation.value };
+  }
+  if (sign(first.value - other.value) !== operation.result) {
+    return {
+      ok: false,
+      problem: `${operation.op} result ${operation.result} is wrong`,
+    };
+  }
+  return { ok: true, state };
+}
+
+function applySwap(
+  operation: Extract<Operation, { op: 'swap' }>,
+  first: Item,
+  context: Pick<Context, 'items' | 'slot' | 'outOfBounds' | 'withItems'>,
+): Applied {
+  const { items, slot, outOfBounds, withItems } = context;
+  const second = slot(operation.j);
+  if (second === undefined) return outOfBounds(operation.j);
+  const next = [...items];
+  next[operation.i] = second;
+  next[operation.j] = first;
+  return withItems(next);
+}
+
+function applySet(
+  operation: Extract<Operation, { op: 'set' }>,
+  first: Item,
+  context: Pick<Context, 'items' | 'withItems'>,
+  freshId: () => number,
+): Applied {
+  const { items, withItems } = context;
+  if (first.value !== operation.prev) {
+    return {
+      ok: false,
+      problem: `set prev ${operation.prev} but slot held ${first.value}`,
+    };
+  }
+  const next = [...items];
+  next[operation.i] = { id: freshId(), value: operation.value };
+  return withItems(next);
+}
+
 export function applyOperation(
   state: State,
   operation: Operation,
@@ -71,51 +134,26 @@ export function applyOperation(
   const items = array.items;
   const slot = (i: number): Item | undefined =>
     Number.isInteger(i) ? items[i] : undefined;
-  const outOfBounds = (i: number): Applied => ({
-    ok: false,
-    problem: indexMessage(items.length, i, target),
-  });
-  const withItems = (next: Item[]): Applied => ({
-    ok: true,
-    state: { ...state, [target]: { kind: 'array', items: next } },
-  });
+  const context: Context = {
+    state,
+    items,
+    slot,
+    outOfBounds: (i) => ({
+      ok: false,
+      problem: indexMessage(items.length, i, target),
+    }),
+    withItems: (next) => ({
+      ok: true,
+      state: { ...state, [target]: { kind: 'array', items: next } },
+    }),
+  };
 
   const first = slot(operation.i);
-  if (first === undefined) return outOfBounds(operation.i);
+  if (first === undefined) return context.outOfBounds(operation.i);
 
   if (operation.op === 'compare' || operation.op === 'compareValue') {
-    let other: { value: number };
-    if (operation.op === 'compare') {
-      const second = slot(operation.j);
-      if (second === undefined) return outOfBounds(operation.j);
-      other = second;
-    } else {
-      other = { value: operation.value };
-    }
-    if (sign(first.value - other.value) !== operation.result) {
-      return {
-        ok: false,
-        problem: `${operation.op} result ${operation.result} is wrong`,
-      };
-    }
-    return { ok: true, state };
+    return applyCompare(operation, first, context);
   }
-
-  const next = [...items];
-  if (operation.op === 'swap') {
-    const second = slot(operation.j);
-    if (second === undefined) return outOfBounds(operation.j);
-    next[operation.i] = second;
-    next[operation.j] = first;
-    return withItems(next);
-  }
-
-  if (first.value !== operation.prev) {
-    return {
-      ok: false,
-      problem: `set prev ${operation.prev} but slot held ${first.value}`,
-    };
-  }
-  next[operation.i] = { id: freshId(), value: operation.value };
-  return withItems(next);
+  if (operation.op === 'swap') return applySwap(operation, first, context);
+  return applySet(operation, first, context, freshId);
 }
