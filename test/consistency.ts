@@ -224,7 +224,7 @@ function checkShape(trace: Trace, problems: string[]) {
   if (trace.steps[0]?.operation.op !== 'init') {
     problems.push('first step is not init');
   }
-  if (trace.steps.at(-1)?.operation.op !== 'done') {
+  if (trace.steps[trace.steps.length - 1]?.operation.op !== 'done') {
     problems.push('last step is not done');
   }
 }

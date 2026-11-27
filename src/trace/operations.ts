@@ -62,12 +62,12 @@ type Context = {
 function applyCompare(
   operation: Extract<Operation, { op: 'compare' | 'compareValue' }>,
   first: Item,
-  ctx: Context,
+  context: Context,
 ): Applied {
   let other: { value: number };
   if (operation.op === 'compare') {
-    const second = ctx.slot(operation.j);
-    if (second === undefined) return ctx.outOfBounds(operation.j);
+    const second = context.slot(operation.j);
+    if (second === undefined) return context.outOfBounds(operation.j);
     other = second;
   } else {
     other = { value: operation.value };
@@ -78,26 +78,26 @@ function applyCompare(
       problem: `${operation.op} result ${operation.result} is wrong`,
     };
   }
-  return { ok: true, state: ctx.state };
+  return { ok: true, state: context.state };
 }
 
 function applySwap(
   operation: Extract<Operation, { op: 'swap' }>,
   first: Item,
-  ctx: Context,
+  context: Context,
 ): Applied {
-  const second = ctx.slot(operation.j);
-  if (second === undefined) return ctx.outOfBounds(operation.j);
-  const next = [...ctx.items];
+  const second = context.slot(operation.j);
+  if (second === undefined) return context.outOfBounds(operation.j);
+  const next = [...context.items];
   next[operation.i] = second;
   next[operation.j] = first;
-  return ctx.withItems(next);
+  return context.withItems(next);
 }
 
 function applySet(
   operation: Extract<Operation, { op: 'set' }>,
   first: Item,
-  ctx: Context,
+  context: Context,
   freshId: () => number,
 ): Applied {
   if (first.value !== operation.prev) {
@@ -106,9 +106,9 @@ function applySet(
       problem: `set prev ${operation.prev} but slot held ${first.value}`,
     };
   }
-  const next = [...ctx.items];
+  const next = [...context.items];
   next[operation.i] = { id: freshId(), value: operation.value };
-  return ctx.withItems(next);
+  return context.withItems(next);
 }
 
 export function applyOperation(
@@ -131,7 +131,7 @@ export function applyOperation(
   const items = array.items;
   const slot = (i: number): Item | undefined =>
     Number.isInteger(i) ? items[i] : undefined;
-  const ctx: Context = {
+  const context: Context = {
     state,
     items,
     slot,
@@ -146,11 +146,11 @@ export function applyOperation(
   };
 
   const first = slot(operation.i);
-  if (first === undefined) return ctx.outOfBounds(operation.i);
+  if (first === undefined) return context.outOfBounds(operation.i);
 
   if (operation.op === 'compare' || operation.op === 'compareValue') {
-    return applyCompare(operation, first, ctx);
+    return applyCompare(operation, first, context);
   }
-  if (operation.op === 'swap') return applySwap(operation, first, ctx);
-  return applySet(operation, first, ctx, freshId);
+  if (operation.op === 'swap') return applySwap(operation, first, context);
+  return applySet(operation, first, context, freshId);
 }

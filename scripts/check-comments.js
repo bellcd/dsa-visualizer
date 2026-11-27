@@ -85,7 +85,8 @@ function scanNext(scan) {
   const c = scan.source[scan.i];
   const next = scan.source[scan.i + 1];
   const closesExpression =
-    c === '}' && scan.templateDepths.at(-1) === scan.braceDepth;
+    c === '}' &&
+    scan.templateDepths[scan.templateDepths.length - 1] === scan.braceDepth;
 
   if (c === '/' && next === '/') scanLineComment(scan);
   else if (c === '/' && next === '*') scanBlockComment(scan);
