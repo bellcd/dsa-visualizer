@@ -62,8 +62,9 @@ type Context = {
 function applyCompare(
   operation: Extract<Operation, { op: 'compare' | 'compareValue' }>,
   first: Item,
-  { state, slot, outOfBounds }: Pick<Context, 'state' | 'slot' | 'outOfBounds'>,
+  context: Pick<Context, 'state' | 'slot' | 'outOfBounds'>,
 ): Applied {
+  const { state, slot, outOfBounds } = context;
   let other: { value: number };
   if (operation.op === 'compare') {
     const second = slot(operation.j);
@@ -84,13 +85,9 @@ function applyCompare(
 function applySwap(
   operation: Extract<Operation, { op: 'swap' }>,
   first: Item,
-  {
-    items,
-    slot,
-    outOfBounds,
-    withItems,
-  }: Pick<Context, 'items' | 'slot' | 'outOfBounds' | 'withItems'>,
+  context: Pick<Context, 'items' | 'slot' | 'outOfBounds' | 'withItems'>,
 ): Applied {
+  const { items, slot, outOfBounds, withItems } = context;
   const second = slot(operation.j);
   if (second === undefined) return outOfBounds(operation.j);
   const next = [...items];
@@ -102,9 +99,10 @@ function applySwap(
 function applySet(
   operation: Extract<Operation, { op: 'set' }>,
   first: Item,
-  { items, withItems }: Pick<Context, 'items' | 'withItems'>,
+  context: Pick<Context, 'items' | 'withItems'>,
   freshId: () => number,
 ): Applied {
+  const { items, withItems } = context;
   if (first.value !== operation.prev) {
     return {
       ok: false,
