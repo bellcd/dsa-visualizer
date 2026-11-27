@@ -42,9 +42,13 @@ function scanString(scan, quote) {
   scan.lastSignificant = quote;
 }
 
-function scanTemplate(scan, closesExpression) {
+function resumeTemplate(scan) {
+  scan.templateDepths.pop();
+  scanTemplate(scan);
+}
+
+function scanTemplate(scan) {
   const { source, templateDepths } = scan;
-  if (closesExpression) templateDepths.pop();
   let j = scan.i + 1;
   let opensExpression = false;
   while (j < source.length && source[j] !== '`') {
@@ -91,7 +95,8 @@ function scanNext(scan) {
   if (c === '/' && next === '/') scanLineComment(scan);
   else if (c === '/' && next === '*') scanBlockComment(scan);
   else if (c === '"' || c === "'") scanString(scan, c);
-  else if (c === '`' || closesExpression) scanTemplate(scan, closesExpression);
+  else if (closesExpression) resumeTemplate(scan);
+  else if (c === '`') scanTemplate(scan);
   else if (c === '/' && !REGEX_PRECEDERS.test(scan.lastSignificant)) {
     scanRegex(scan);
   } else scanOther(scan, c);

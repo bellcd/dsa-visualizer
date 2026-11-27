@@ -19,63 +19,68 @@ function itemsOf(state: State, target: string): Item[] | undefined {
   return s?.kind === 'array' ? s.items : undefined;
 }
 
-type Expectation = {
+type Slot = (index: number) => Item | undefined;
+
+function expectCompare(params: {
+  operation: Extract<Operation, { op: 'compare' | 'compareValue' }>;
+  slot: Slot;
+  problems: string[];
+  at: string;
+}) {
+  const { operation, slot, problems, at } = params;
+  const left = slot(operation.i);
+  const right =
+    operation.op === 'compare' ? slot(operation.j) : { value: operation.value };
+  if (left === undefined || right === undefined) {
+    problems.push(`${at}: ${operation.op} index out of bounds`);
+  } else if (sign(left.value - right.value) !== operation.result) {
+    problems.push(`${at}: ${operation.op} result ${operation.result} is wrong`);
+  }
+}
+
+function expectSwap(params: {
+  operation: Extract<Operation, { op: 'swap' }>;
+  slot: Slot;
+  items: Item[];
+  problems: string[];
+  at: string;
+}) {
+  const { operation, slot, items, problems, at } = params;
+  const first = slot(operation.i);
+  const second = slot(operation.j);
+  if (first === undefined || second === undefined) {
+    problems.push(`${at}: swap index out of bounds`);
+    return;
+  }
+  items[operation.i] = second;
+  items[operation.j] = first;
+}
+
+function expectSet(params: {
+  operation: Extract<Operation, { op: 'set' }>;
+  slot: Slot;
   next: Step;
   items: Item[];
   seen: Map<string, Set<number>>;
   problems: string[];
   at: string;
-};
-
-type Slot = (i: number) => Item | undefined;
-
-function expectCompare(
-  op: Extract<Operation, { op: 'compare' | 'compareValue' }>,
-  slot: Slot,
-  { problems, at }: Expectation,
-) {
-  const a = slot(op.i);
-  const b = op.op === 'compare' ? slot(op.j) : { value: op.value };
-  if (a === undefined || b === undefined) {
-    problems.push(`${at}: ${op.op} index out of bounds`);
-  } else if (sign(a.value - b.value) !== op.result) {
-    problems.push(`${at}: ${op.op} result ${op.result} is wrong`);
-  }
-}
-
-function expectSwap(
-  op: Extract<Operation, { op: 'swap' }>,
-  slot: Slot,
-  { items, problems, at }: Expectation,
-) {
-  const a = slot(op.i);
-  const b = slot(op.j);
-  if (a === undefined || b === undefined) {
-    problems.push(`${at}: swap index out of bounds`);
-    return;
-  }
-  items[op.i] = b;
-  items[op.j] = a;
-}
-
-function expectSet(
-  op: Extract<Operation, { op: 'set' }>,
-  slot: Slot,
-  { next, items, seen, problems, at }: Expectation,
-) {
-  const old = slot(op.i);
+}) {
+  const { operation, slot, next, items, seen, problems, at } = params;
+  const old = slot(operation.i);
   if (old === undefined) {
     problems.push(`${at}: set index out of bounds`);
     return;
   }
-  if (old.value !== op.prev) {
-    problems.push(`${at}: set prev ${op.prev} but slot held ${old.value}`);
+  if (old.value !== operation.prev) {
+    problems.push(
+      `${at}: set prev ${operation.prev} but slot held ${old.value}`,
+    );
   }
-  const id = itemsOf(next.state, op.target)?.[op.i]?.id;
-  if (id === undefined || seen.get(op.target)?.has(id)) {
+  const id = itemsOf(next.state, operation.target)?.[operation.i]?.id;
+  if (id === undefined || seen.get(operation.target)?.has(id)) {
     problems.push(`${at}: set did not give the slot a new id`);
   } else {
-    items[op.i] = { id, value: op.value };
+    items[operation.i] = { id, value: operation.value };
   }
 }
 
@@ -88,25 +93,25 @@ function applyOperation(
   at: string,
 ): State {
   const expected = structuredClone(prev.state);
-  const op = next.operation;
-  if (op.op === 'init') {
+  const operation = next.operation;
+  if (operation.op === 'init') {
     problems.push(`${at}: 'init' after step 0`);
     return expected;
   }
-  if (op.op === 'mark' || op.op === 'done') return expected;
-  const items = itemsOf(expected, op.target);
+  if (operation.op === 'mark' || operation.op === 'done') return expected;
+  const items = itemsOf(expected, operation.target);
   if (items === undefined) {
-    problems.push(`${at}: unknown array '${op.target}'`);
+    problems.push(`${at}: unknown array '${operation.target}'`);
     return expected;
   }
-  const slot: Slot = (i) => (Number.isInteger(i) ? items[i] : undefined);
-  const expectation: Expectation = { next, items, seen, problems, at };
-  if (op.op === 'compare' || op.op === 'compareValue') {
-    expectCompare(op, slot, expectation);
-  } else if (op.op === 'swap') {
-    expectSwap(op, slot, expectation);
+  const slot: Slot = (index) =>
+    Number.isInteger(index) ? items[index] : undefined;
+  if (operation.op === 'compare' || operation.op === 'compareValue') {
+    expectCompare({ operation, slot, problems, at });
+  } else if (operation.op === 'swap') {
+    expectSwap({ operation, slot, items, problems, at });
   } else {
-    expectSet(op, slot, expectation);
+    expectSet({ operation, slot, next, items, seen, problems, at });
   }
   return expected;
 }
