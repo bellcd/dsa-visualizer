@@ -1,0 +1,14 @@
+language js
+
+TsArrayType($element) where {
+  $element <: or {
+    TsObjectType(),
+    TsUnionType(),
+    TsFunctionType(),
+    TsParenthesizedType(ty=or {
+      TsUnionType(),
+      TsFunctionType()
+    })
+  },
+  register_diagnostic(span=$element, message="Write an array of an inline object, union or function type as `Array<T>`, not `T[]`.")
+}

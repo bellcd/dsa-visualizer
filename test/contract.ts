@@ -41,7 +41,7 @@ type ContractSpec<I, R> = {
   /** Edge-case inputs that always run, besides the generated ones. */
   examples: I[];
   /** Exact snapshots for known inputs. */
-  pinned: { input: I; stats: Record<string, number>; result?: R }[];
+  pinned: Array<{ input: I; stats: Record<string, number>; result?: R }>;
 };
 
 export function algorithmContract<I extends Record<string, unknown>, R>(

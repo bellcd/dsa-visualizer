@@ -14,5 +14,8 @@
       "complexity": { "noExcessiveCognitiveComplexity": "error" }
     }
   },
-  "plugins": ["./biome-plugins/no-type-assertion.grit"]
+  "plugins": [
+    "./biome-plugins/array-generic-form.grit",
+    "./biome-plugins/no-type-assertion.grit"
+  ]
 }
