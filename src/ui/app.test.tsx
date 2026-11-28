@@ -1,53 +1,41 @@
 import { renderToStaticMarkup } from 'react-dom/server';
 import { expect, test } from 'vitest';
-import type { AlgorithmGroup } from '../algorithms/index.js';
 import { App } from './app.js';
-
-const menuGroups = (search: string): readonly AlgorithmGroup[] => {
-  const showHidden = search === '?hidden';
-  const groups: AlgorithmGroup[] = [
-    {
-      name: 'Shown group',
-      hidden: false,
-      defs: [
-        {
-          id: 'shown-one',
-          name: 'Shown one',
-          pseudocode: [],
-          inputFields: [],
-          validate() {},
-          setup: () => ({}),
-          run() {},
-        },
-      ],
-    },
-    {
-      name: 'Hidden group',
-      hidden: true,
-      defs: [
-        {
-          id: 'hidden-one',
-          name: 'Hidden one',
-          pseudocode: [],
-          inputFields: [],
-          validate() {},
-          setup: () => ({}),
-          run() {},
-        },
-      ],
-    },
-  ];
-  return groups.filter((group) => showHidden || !group.hidden);
-};
 
 test('App lists each algorithm name from the given menuGroups', () => {
   const html = renderToStaticMarkup(
-    <App search="?hidden" menuGroups={menuGroups} />,
+    <App
+      search=""
+      menuGroups={() => [
+        {
+          name: 'Sorting',
+          hidden: false,
+          defs: [
+            {
+              id: 'swap-one',
+              name: 'Swap one',
+              pseudocode: [],
+              inputFields: [],
+              validate() {},
+              setup: () => ({}),
+              run() {},
+            },
+          ],
+        },
+      ]}
+    />,
   );
-  expect(html).toContain('<li>Hidden one</li>');
+  expect(html).toContain('<h2>Sorting</h2><ul><li>Swap one</li></ul>');
 });
 
-test('App omits groups the given menuGroups leaves out', () => {
-  const html = renderToStaticMarkup(<App search="" menuGroups={menuGroups} />);
-  expect(html).not.toContain('Hidden group');
+test('App passes its search to menuGroups', () => {
+  const html = renderToStaticMarkup(
+    <App
+      search="?probe"
+      menuGroups={(search) => [
+        { name: `Searched ${search}`, hidden: false, defs: [] },
+      ]}
+    />,
+  );
+  expect(html).toContain('<h2>Searched ?probe</h2>');
 });
