@@ -1,6 +1,12 @@
-import { menuGroups } from '../algorithms/index.js';
+import type { AlgorithmGroup } from '../algorithms/index.js';
 
-export function App({ search }: { search: string }) {
+export function App({
+  search,
+  menuGroups,
+}: {
+  search: string;
+  menuGroups: (search: string) => readonly AlgorithmGroup[];
+}) {
   return (
     <main>
       <h1>DSA visualizer</h1>
