@@ -20,7 +20,9 @@ function lintSource(source) {
   try {
     const file = join(directory, 'probe.ts');
     writeFileSync(file, source);
-    return spawnSync('npx', ['biome', 'lint', file], { encoding: 'utf8' });
+    return spawnSync('./node_modules/.bin/biome', ['lint', file], {
+      encoding: 'utf8',
+    });
   } finally {
     rmSync(directory, { recursive: true });
   }
