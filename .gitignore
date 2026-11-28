@@ -20,3 +20,7 @@ coverage/
 .stryker-tmp/
 reports/
 stryker-setup-*.js
+
+# Playwright output
+test-results/
+playwright-report/
