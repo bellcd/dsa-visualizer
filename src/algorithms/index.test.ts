@@ -34,10 +34,10 @@ describe('registry', () => {
 });
 
 describe('demo-swap', () => {
-  const tr = trace(demoSwapDef, { values: [5, 1, 4, 2, 3] });
+  const recordedTrace = trace(demoSwapDef, { values: [5, 1, 4, 2, 3] });
 
   test('demo-swap does compares, a swap, a compareValue, a set and a mark step', () => {
-    const ops = tr.steps.map((s) => s.operation.op);
+    const ops = recordedTrace.steps.map((s) => s.operation.op);
     expect(ops).toEqual([
       'init',
       'compare',
@@ -47,42 +47,46 @@ describe('demo-swap', () => {
       'set',
       'done',
     ]);
-    expect(tr.stats).toEqual({ compares: 2, swaps: 1, sets: 1 });
-    expect(tr.result).toEqual([1, 5, 4, 2, 4]);
+    expect(recordedTrace.stats).toEqual({ compares: 2, swaps: 1, sets: 1 });
+    expect(recordedTrace.result).toEqual([1, 5, 4, 2, 4]);
   });
 
   test('demo-swap attaches its note to the first compare step only', () => {
-    expect(tr.steps[1]?.note).toBe('compare the first two');
-    expect(tr.steps.filter((s) => s.note !== undefined)).toHaveLength(1);
+    expect(recordedTrace.steps[1]?.note).toBe('compare the first two');
+    expect(
+      recordedTrace.steps.filter((s) => s.note !== undefined),
+    ).toHaveLength(1);
   });
 
   test('demo-swap marks two pointers and clears one of them', () => {
-    expect(tr.steps[1]?.marks.pointers).toEqual({
+    expect(recordedTrace.steps[1]?.marks.pointers).toEqual({
       i: { target: 'a', at: 0 },
       j: { target: 'a', at: 1 },
     });
-    expect(tr.steps[4]?.marks.pointers).toEqual({ i: { target: 'a', at: 0 } });
+    expect(recordedTrace.steps[4]?.marks.pointers).toEqual({
+      i: { target: 'a', at: 0 },
+    });
   });
 
   test('demo-swap holds the third value in a var', () => {
-    expect(tr.steps[1]?.marks.vars).toEqual({ held: 4 });
+    expect(recordedTrace.steps[1]?.marks.vars).toEqual({ held: 4 });
   });
 
   test('demo-swap marks a sorted range', () => {
-    expect(tr.steps[3]?.marks.ranges).toEqual({
+    expect(recordedTrace.steps[3]?.marks.ranges).toEqual({
       sorted: { target: 'a', from: 0, to: 2 },
     });
   });
 
   test('demo-swap tags a spot and then removes the tag', () => {
-    expect(tr.steps[3]?.marks.tags).toEqual({
+    expect(recordedTrace.steps[3]?.marks.tags).toEqual({
       visited: [{ target: 'a', at: 4, tag: 'visited' }],
     });
-    expect(tr.steps[4]?.marks.tags).toEqual({});
+    expect(recordedTrace.steps[4]?.marks.tags).toEqual({});
   });
 
   test('demo-swap is one level deep from the compareValue until the exit', () => {
-    expect(tr.steps.map((s) => s.depth)).toEqual([
+    expect(recordedTrace.steps.map((s) => s.depth)).toEqual([
       undefined,
       undefined,
       undefined,
@@ -94,11 +98,19 @@ describe('demo-swap', () => {
   });
 
   test('demo-swap moves the pseudocode line as it goes', () => {
-    expect(tr.steps.map((s) => s.line)).toEqual([undefined, 0, 1, 2, 2, 3, 3]);
+    expect(recordedTrace.steps.map((s) => s.line)).toEqual([
+      undefined,
+      0,
+      1,
+      2,
+      2,
+      3,
+      3,
+    ]);
   });
 
   test('demo-swap compares a[2] with the held value', () => {
-    expect(tr.steps[3]?.operation).toMatchObject({
+    expect(recordedTrace.steps[3]?.operation).toMatchObject({
       op: 'compareValue',
       i: 2,
       value: 4,

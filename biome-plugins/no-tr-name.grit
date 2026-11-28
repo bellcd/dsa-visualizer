@@ -1,0 +1,6 @@
+language js
+
+JsIdentifierBinding() as $name where {
+  $name <: `tr`,
+  register_diagnostic(span=$name, message="Do not name a declaration `tr`: it is ambiguous. Spell it out, e.g. `recordedTrace` for a trace.")
+}
