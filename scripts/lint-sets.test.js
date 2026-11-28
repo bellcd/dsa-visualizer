@@ -77,6 +77,24 @@ test('strict lint set rejects a parameter named tr', () => {
   expect(result.stderr).toContain(TR_MESSAGE);
 });
 
+test('strict lint set rejects a destructured binding named tr', () => {
+  const result = lintSource('export const { tr } = { tr: 1 };\n');
+  expect(result.status).toBe(1);
+  expect(result.stderr).toContain(TR_MESSAGE);
+});
+
+test('strict lint set rejects a loop variable named tr', () => {
+  const result = lintSource('for (const tr of [1]) { console.log(tr); }\n');
+  expect(result.status).toBe(1);
+  expect(result.stderr).toContain(TR_MESSAGE);
+});
+
+test('strict lint set rejects a catch binding named tr', () => {
+  const result = lintSource('try { f(); } catch (tr) { console.log(tr); }\n');
+  expect(result.status).toBe(1);
+  expect(result.stderr).toContain(TR_MESSAGE);
+});
+
 test('strict lint set accepts variables named trace and trackIds', () => {
   const source = 'export const trace = 1;\nexport const trackIds = 2;\n';
   expect(lintSource(source).status).toBe(0);
