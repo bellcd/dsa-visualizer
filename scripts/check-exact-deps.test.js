@@ -48,3 +48,16 @@ test.each([
 ])('check-exact-deps checks %s', (section) => {
   expect(check({ [section]: { a: '^1.0.0' } }).status).toBe(1);
 });
+
+test('check-exact-deps passes on an npm alias to an exact version', () => {
+  const result = check({
+    devDependencies: { a: 'npm:@scope/real@6.0.2', b: 'npm:real@7.0.2' },
+  });
+  expect(result.status).toBe(0);
+});
+
+test('check-exact-deps fails on an npm alias to a range', () => {
+  const result = check({ devDependencies: { a: 'npm:real@^6.0.2' } });
+  expect(result.status).toBe(1);
+  expect(result.stderr).toContain('devDependencies: a@npm:real@^6.0.2');
+});
