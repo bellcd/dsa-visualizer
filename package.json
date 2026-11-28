@@ -12,10 +12,11 @@
     "lint:strict": "biome lint",
     "lint:all": "biome lint --config-path=lint-all",
     "format": "biome format --write",
-    "check": "biome ci && npm run check-comments && npm run check-lint-duplicates",
+    "check": "biome ci && npm run check-comments && npm run check-lint-duplicates && npm run check-no-npx",
     "test": "vitest run",
     "check-comments": "node scripts/check-comments.js",
     "check-lint-duplicates": "node scripts/check-lint-duplicates.js",
+    "check-no-npx": "node scripts/check-no-npx.js",
     "prepare": "husky || true"
   },
   "devDependencies": {
