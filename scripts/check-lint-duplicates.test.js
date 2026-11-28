@@ -12,9 +12,10 @@ function check(params) {
   const allPath = join(dir, 'all.json');
   writeFileSync(strictPath, JSON.stringify(params.strict));
   writeFileSync(allPath, JSON.stringify(params.all));
-  return spawnSync('node', [script, strictPath, allPath], {
+  const result = spawnSync('node', [script, strictPath, allPath], {
     encoding: 'utf8',
   });
+  return { result, strictPath, allPath };
 }
 
 const strict = {
@@ -27,7 +28,7 @@ const strict = {
 };
 
 test('check-lint-duplicates fails and names the rule when the all-config repeats a strict rule at another severity', () => {
-  const result = check({
+  const { result, strictPath, allPath } = check({
     strict,
     all: {
       linter: {
@@ -35,15 +36,13 @@ test('check-lint-duplicates fails and names the rule when the all-config repeats
       },
     },
   });
+  const expected = `complexity/noExcessiveCognitiveComplexity is already set in ${strictPath}. Delete it from ${allPath}.\n`;
   expect(result.status).toBe(1);
-  expect(result.stderr).toContain(
-    'complexity/noExcessiveCognitiveComplexity is already set in',
-  );
-  expect(result.stderr).toContain('Delete it from');
+  expect(result.stderr).toBe(expected);
 });
 
 test('check-lint-duplicates passes when the all-config holds a rule absent from strict', () => {
-  const result = check({
+  const { result } = check({
     strict,
     all: { linter: { rules: { complexity: { noForEach: 'error' } } } },
   });
@@ -51,7 +50,7 @@ test('check-lint-duplicates passes when the all-config holds a rule absent from 
 });
 
 test('check-lint-duplicates passes when the same rule name sits in a different group', () => {
-  const result = check({
+  const { result } = check({
     strict,
     all: {
       linter: {
@@ -63,7 +62,7 @@ test('check-lint-duplicates passes when the same rule name sits in a different g
 });
 
 test('check-lint-duplicates passes when the all-config sets no rules', () => {
-  const result = check({ strict, all: { extends: ['../biome.json'] } });
+  const { result } = check({ strict, all: { extends: ['../biome.json'] } });
   expect(result.status).toBe(0);
 });
 
