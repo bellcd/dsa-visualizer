@@ -59,7 +59,7 @@ jobs:
       - run: npm ci
       - env:
           FILES: ${{ needs.changes.outputs.mutate }}
-        run: npx stryker run --mutate "$FILES"
+        run: ./node_modules/.bin/stryker run --mutate "$FILES"
 
   result:
     needs: [changes, checks, stryker]
