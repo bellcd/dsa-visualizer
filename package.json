@@ -17,16 +17,28 @@
     "check-comments": "node scripts/check-comments.js",
     "check-lint-duplicates": "node scripts/check-lint-duplicates.js",
     "check-no-npx": "node scripts/check-no-npx.js",
-    "prepare": "husky || true"
+    "prepare": "husky || true",
+    "dev": "vite",
+    "build": "vite build",
+    "test:e2e": "playwright test"
   },
   "devDependencies": {
     "@biomejs/biome": "2.6.6",
+    "@playwright/test": "1.65.1",
     "@stryker-mutator/core": "10.1.1",
     "@stryker-mutator/vitest-runner": "10.1.1",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
     "@typescript/native": "npm:typescript@7.0.2",
+    "@vitejs/plugin-react": "6.3.0",
     "fast-check": "4.10.2",
     "husky": "9.1.7",
     "typescript": "npm:@typescript/typescript6@6.0.2",
+    "vite": "8.3.8",
     "vitest": "5.1.0"
+  },
+  "dependencies": {
+    "react": "19.3.1",
+    "react-dom": "19.3.1"
   }
 }

@@ -46,6 +46,28 @@ jobs:
       - run: npm ci
       - run: npm run ${{ matrix.script }}
 
+  e2e:
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - run: ./node_modules/.bin/playwright install --with-deps --no-shell chromium
+      - run: npm run test:e2e
+        env:
+          PW_TEST_HTML_REPORT_OPEN: never
+      - if: always()
+        uses: actions/upload-artifact@v5
+        with:
+          name: playwright-screenshots
+          path: test-results/
+          if-no-files-found: ignore
+
   stryker:
     needs: changes
     if: needs.changes.outputs.mutate != ''
@@ -62,7 +84,7 @@ jobs:
         run: ./node_modules/.bin/stryker run --mutate "$FILES"
 
   result:
-    needs: [changes, checks, stryker]
+    needs: [changes, checks, e2e, stryker]
     if: always()
     runs-on: ubuntu-latest
     steps:
