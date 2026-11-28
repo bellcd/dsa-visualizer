@@ -1,0 +1,5 @@
+language js
+
+TsIndexedAccessType() as $type where {
+  register_diagnostic(span=$type, message="Do not reach for a type by indexed access, e.g. `Operation['op']`. Use the named type, exporting it where it is defined, or inline it, e.g. `'a' | 'b'`.")
+}

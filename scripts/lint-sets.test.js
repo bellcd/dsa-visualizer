@@ -99,3 +99,71 @@ test('strict lint set accepts variables named trace and trackIds', () => {
   const source = 'export const trace = 1;\nexport const trackIds = 2;\n';
   expect(lintSource(source).status).toBe(0);
 });
+
+const SLICING_MESSAGE =
+  'Do not count from the end with `.at(-n)` or `.slice(-n)`. Take the last element as `items[items.length - 1]` and a trailing subarray as `items.slice(items.length - n)`.';
+
+test('strict lint set rejects .at(-1) and names length indexing', () => {
+  const result = lintSource('export const x = [1].at(-1);\n');
+  expect(result.status).toBe(1);
+  expect(result.stderr).toContain(SLICING_MESSAGE);
+});
+
+test('strict lint set rejects .at(-2)', () => {
+  const result = lintSource('export const x = [1].at(-2);\n');
+  expect(result.status).toBe(1);
+  expect(result.stderr).toContain(SLICING_MESSAGE);
+});
+
+test('strict lint set rejects .slice(-1)', () => {
+  const result = lintSource('export const x = [1].slice(-1);\n');
+  expect(result.status).toBe(1);
+  expect(result.stderr).toContain(SLICING_MESSAGE);
+});
+
+test('strict lint set rejects .slice(-3)', () => {
+  const result = lintSource('export const x = [1].slice(-3);\n');
+  expect(result.status).toBe(1);
+  expect(result.stderr).toContain(SLICING_MESSAGE);
+});
+
+test('strict lint set rejects .slice(-2, end) with an end argument', () => {
+  const result = lintSource('export const x = [1, 2, 3].slice(-2, 3);\n');
+  expect(result.status).toBe(1);
+  expect(result.stderr).toContain(SLICING_MESSAGE);
+});
+
+test('strict lint set accepts .slice(0, -1) with a negative end only', () => {
+  expect(lintSource('export const x = [1, 2].slice(0, -1);\n').status).toBe(0);
+});
+
+test('strict lint set accepts length-based last element and trailing slice', () => {
+  const source =
+    'const items = [1, 2, 3];\nexport const last = items[items.length - 1];\nexport const tail = items.slice(items.length - 2);\n';
+  expect(lintSource(source).status).toBe(0);
+});
+
+const INDEXED_MESSAGE =
+  "Do not reach for a type by indexed access, e.g. `Operation['op']`. Use the named type, exporting it where it is defined, or inline it, e.g. `'a' | 'b'`.";
+
+test('strict lint set rejects an indexed-access type', () => {
+  const source =
+    "interface Operation { op: string }\nexport type X = Operation['op'];\n";
+  const result = lintSource(source);
+  expect(result.status).toBe(1);
+  expect(result.stderr).toContain(INDEXED_MESSAGE);
+});
+
+test('strict lint set rejects an indexed-access type by number', () => {
+  const source =
+    "declare function f(): { items: string[] };\nexport type X = ReturnType<typeof f>['items'][number];\n";
+  const result = lintSource(source);
+  expect(result.status).toBe(1);
+  expect(result.stderr).toContain(INDEXED_MESSAGE);
+});
+
+test('strict lint set accepts value indexing with a literal', () => {
+  expect(
+    lintSource('const items = [1];\nexport const x = items[0];\n').status,
+  ).toBe(0);
+});

@@ -16,6 +16,8 @@
   },
   "plugins": [
     "./biome-plugins/array-generic-form.grit",
+    "./biome-plugins/no-indexed-access-type.grit",
+    "./biome-plugins/no-negative-index-slicing.grit",
     "./biome-plugins/no-tr-name.grit",
     "./biome-plugins/no-type-assertion.grit"
   ]
