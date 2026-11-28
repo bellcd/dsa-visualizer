@@ -6,7 +6,7 @@ const MESSAGE =
   'Do not shell out through npx or npm exec: it downloads an unpinned package when the tool is not installed. Call ./node_modules/.bin/<tool> or an npm run script.';
 
 const SCAN_DIRS = ['scripts', 'test', 'src', '.husky', '.github/workflows'];
-const SKIP_DIRS = new Set(['node_modules', '_']);
+const SKIP_DIRS = new Set(['node_modules']);
 const OWN_FILES = new Set([
   'scripts/check-no-npx.js',
   'scripts/check-no-npx.test.js',
@@ -24,7 +24,7 @@ function usesNpx(line) {
   );
 }
 
-export function findNpxLines(source) {
+function findNpxLines(source) {
   const found = [];
   const lines = source.split('\n');
   for (const [index, text] of lines.entries()) {
