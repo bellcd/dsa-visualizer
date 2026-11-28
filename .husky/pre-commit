@@ -1,6 +1,7 @@
 files=$(git diff --cached --name-only --diff-filter=ACMR)
 [ -z "$files" ] && exit 0
 ts=$(printf '%s\n' "$files" | grep -E '\.ts$' || true)
+bin=./node_modules/.bin
 out=$(mktemp -d)
 trap 'rm -rf "$out"' EXIT
 
@@ -9,12 +10,10 @@ run() {
   "$@" >"$out/$name.log" 2>&1 || echo "$name" >>"$out/failed"
 }
 
-run biome npx biome check --staged --no-errors-on-unmatched &
-run tsc npx tsc --noEmit &
-if [ -n "$ts" ]; then
-  run comments node scripts/check-comments.js $ts &
-  run vitest npx vitest related --run --passWithNoTests $ts &
-fi
+run biome "$bin/biome" check --staged --error-on-warnings --no-errors-on-unmatched &
+run tsc "$bin/tsc" --noEmit &
+[ -n "$ts" ] && run comments node scripts/check-comments.js $ts &
+[ -n "$ts" ] && run vitest "$bin/vitest" related --run --passWithNoTests $ts &
 wait
 
 [ -f "$out/failed" ] || exit 0
