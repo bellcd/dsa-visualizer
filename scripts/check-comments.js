@@ -118,8 +118,9 @@ function findComments(source) {
 
 export function violations(source) {
   return findComments(source).filter(
-    ({ text, jsdoc }) =>
-      !jsdoc && !text.replace(/^[\s*]+/, '').startsWith('NOTE:'),
+    (comment) =>
+      !comment.jsdoc &&
+      !comment.text.replace(/^[\s*]+/, '').startsWith('NOTE:'),
   );
 }
 

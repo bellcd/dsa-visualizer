@@ -12,12 +12,8 @@ const RUNS = 200;
 
 type Range = { min: number; max: number; lo: number; hi: number };
 
-export function numberArrays({
-  min,
-  max,
-  lo,
-  hi,
-}: Range): fc.Arbitrary<number[]> {
+export function numberArrays(params: Range): fc.Arbitrary<number[]> {
+  const { min, max, lo, hi } = params;
   return fc.array(fc.integer({ min: lo, max: hi }), {
     minLength: min,
     maxLength: max,

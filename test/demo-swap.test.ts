@@ -8,11 +8,13 @@ algorithmContract(demoSwapDef, {
   arbitrary: numberArrays({ min: 5, max: 5, lo: -99, hi: 99 }).map(
     (values) => ({ values }),
   ),
-  check({ values }, result) {
+  check(input, result) {
+    const { values } = input;
     const [a = 0, b = 0, c = 0, d = 0] = values;
     expect(result).toEqual(a > b ? [b, a, c, d, c] : [a, b, c, d, c]);
   },
-  guarantee(step, { input }) {
+  guarantee(step, context) {
+    const { input } = context;
     // NOTE: `set` rewrites values and `done` is not a swap, so neither keeps the multiset.
     const a = step.state.a;
     if (a?.kind !== 'array') throw new Error('expected array a');

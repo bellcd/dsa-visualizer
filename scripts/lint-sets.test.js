@@ -61,3 +61,41 @@ test('strict lint set accepts User[]', () => {
   const source = 'interface User { id: string }\nexport type X = User[];\n';
   expect(lintSource(source).status).toBe(0);
 });
+
+const DESTRUCTURE_MESSAGE =
+  'Do not destructure a parameter in the signature. Take one `params` object (or a descriptively named parameter) and destructure it in the body.';
+
+test('strict lint set rejects a destructured function declaration parameter', () => {
+  const result = lintSource('export function f({ a }) {\n  return a;\n}\n');
+  expect(result.status).toBe(1);
+  expect(result.stderr).toContain(DESTRUCTURE_MESSAGE);
+});
+
+test('strict lint set rejects a destructured function expression parameter', () => {
+  const result = lintSource(
+    'export const f = function ({ a }) {\n  return a;\n};\n',
+  );
+  expect(result.status).toBe(1);
+  expect(result.stderr).toContain(DESTRUCTURE_MESSAGE);
+});
+
+test('strict lint set rejects a destructured method parameter', () => {
+  const result = lintSource(
+    'export class C {\n  m({ a }: { a: number }) {\n    return a;\n  }\n}\n',
+  );
+  expect(result.status).toBe(1);
+  expect(result.stderr).toContain(DESTRUCTURE_MESSAGE);
+});
+
+test('strict lint set rejects a destructured arrow function parameter', () => {
+  const result = lintSource('export const f = ({ a }: { a: number }) => a;\n');
+  expect(result.status).toBe(1);
+  expect(result.stderr).toContain(DESTRUCTURE_MESSAGE);
+});
+
+test('strict lint set accepts a params parameter destructured in the body', () => {
+  const result = lintSource(
+    'export function f(params: { a: number }) {\n  const { a } = params;\n  return a;\n}\n',
+  );
+  expect(result.status).toBe(0);
+});

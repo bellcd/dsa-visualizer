@@ -63,12 +63,12 @@ test('the script exits zero on clean files', () => {
 
 test('an unterminated block comment is reported once', () => {
   const found = violations('const a = 1;\n/* never closed');
-  expect(found.map(({ line }) => line)).toEqual([2]);
+  expect(found.map((comment) => comment.line)).toEqual([2]);
 });
 
 test('a comment after a nested template expression is found on its own line', () => {
   const source = dollar('const a = `x@{`y@{1}`}`;\n// restates\n');
-  expect(violations(source).map(({ line }) => line)).toEqual([2]);
+  expect(violations(source).map((comment) => comment.line)).toEqual([2]);
 });
 
 test('a quote inside a regex character class does not open a string', () => {

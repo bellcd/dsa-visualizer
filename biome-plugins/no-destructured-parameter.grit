@@ -1,0 +1,9 @@
+language js
+
+JsObjectBindingPattern() as $pattern where {
+  $pattern <: within or {
+    JsFormalParameter(),
+    JsParameters()
+  },
+  register_diagnostic(span=$pattern, message="Do not destructure a parameter in the signature. Take one `params` object (or a descriptively named parameter) and destructure it in the body.")
+}

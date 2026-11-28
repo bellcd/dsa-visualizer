@@ -16,6 +16,7 @@
   },
   "plugins": [
     "./biome-plugins/array-generic-form.grit",
+    "./biome-plugins/no-destructured-parameter.grit",
     "./biome-plugins/no-type-assertion.grit"
   ]
 }
