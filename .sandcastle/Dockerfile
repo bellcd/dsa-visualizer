@@ -3,7 +3,7 @@
 FROM node:24.22.3-bookworm-slim
 
 RUN apt-get update \
- && apt-get install -y --no-install-recommends git ca-certificates jq \
+ && apt-get install -y --no-install-recommends git ca-certificates curl jq \
  && rm -rf /var/lib/apt/lists/*
 
 # Exact version, at least two weeks old when pinned.

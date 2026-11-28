@@ -7,7 +7,7 @@ The sandbox image has `agent-browser` and one Chromium, shared with Playwright t
 ## Workflow
 
 1. Start the dev server in the background: `npm run dev &`.
-2. Wait for it: `until curl -sf http://localhost:5173 >/dev/null; do sleep 0.5; done`. Without curl, poll with `wget -q -O /dev/null`.
+2. Wait for it: `until curl -sf http://localhost:5173 >/dev/null; do sleep 0.5; done`.
 3. Do a throwaway load first (trap 2).
 4. `agent-browser open 'http://localhost:5173/?fixtures'`.
 5. Wait for what you expect to appear, not for idle: `agent-browser wait --text 'Demo: swap'`.
