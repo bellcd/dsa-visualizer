@@ -5,7 +5,7 @@
 
 ## Promote a rule
 
-When a rule in `lint-all/biome.json` has no failures left, move it: add it to `linter.rules` in `biome.json` and delete it from `lint-all/biome.json`. `lint:strict` now enforces it, and `lint:all` inherits it by extending `biome.json`.
+When a rule in `lint-all/biome.json` has no failures left, move it: add it to `linter.rules` in `biome.json` and delete it from `lint-all/biome.json`. `npm run check-lint-duplicates`, part of `npm run check`, fails while a rule is in both files. `lint:strict` now enforces it, and `lint:all` inherits it by extending `biome.json`.
 
 ## Why `lint-all/` is excluded in `biome.json`
 
