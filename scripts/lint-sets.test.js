@@ -127,6 +127,16 @@ test('strict lint set rejects .slice(-3)', () => {
   expect(result.stderr).toContain(SLICING_MESSAGE);
 });
 
+test('strict lint set rejects .slice(-2, end) with an end argument', () => {
+  const result = lintSource('export const x = [1, 2, 3].slice(-2, 3);\n');
+  expect(result.status).toBe(1);
+  expect(result.stderr).toContain(SLICING_MESSAGE);
+});
+
+test('strict lint set accepts .slice(0, -1) with a negative end only', () => {
+  expect(lintSource('export const x = [1, 2].slice(0, -1);\n').status).toBe(0);
+});
+
 test('strict lint set accepts length-based last element and trailing slice', () => {
   const source =
     'const items = [1, 2, 3];\nexport const last = items[items.length - 1];\nexport const tail = items.slice(items.length - 2);\n';
