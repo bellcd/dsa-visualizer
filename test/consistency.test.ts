@@ -58,7 +58,7 @@ describe('checkConsistency', () => {
 
   test('checkConsistency reports ids that are not a permutation when no set happened', () => {
     const problems = broken((t) => {
-      t.steps = t.steps.slice(0, 2).concat(t.steps.slice(-1));
+      t.steps = t.steps.slice(0, 2).concat(t.steps.slice(t.steps.length - 1));
       t.stats = { compares: 1, swaps: 0, sets: 0 };
       itemAt(t, 1, 0).id = 99;
     });

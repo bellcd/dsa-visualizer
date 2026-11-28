@@ -1,0 +1,9 @@
+language js
+
+or {
+  `$list.at(-$n)`,
+  `$list.slice(-$n)`,
+  `$list.slice(-$n, $end)`
+} as $call where {
+  register_diagnostic(span=$call, message="Do not count from the end with `.at(-n)` or `.slice(-n)`. Take the last element as `items[items.length - 1]` and a trailing subarray as `items.slice(items.length - n)`.")
+}
