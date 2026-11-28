@@ -2,6 +2,7 @@
 
 - Use the terms in `GLOSSARY.md`.
 - Read `docs/trace-format.md` before changing `src/trace/` or writing an algorithm.
+- Read `docs/typescript-alias.md` before changing the `typescript` dependencies or the Stryker config.
 
 ## Issue tracker
 

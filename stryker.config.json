@@ -8,6 +8,5 @@
     "!src/**/*.test.ts",
     "!src/algorithms/fixtures/**"
   ],
-  "thresholds": { "high": 90, "low": 85, "break": 80 },
-  "inPlace": true
+  "thresholds": { "high": 90, "low": 85, "break": 80 }
 }
