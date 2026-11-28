@@ -21,10 +21,10 @@ algorithmContract(demoSwapDef, {
       [...input.values].sort(byValue),
     );
   },
-  bounds(tr) {
-    expect(tr.stats.compares).toBe(2);
-    expect(tr.stats.swaps).toBeLessThanOrEqual(1);
-    expect(tr.stats.sets).toBe(1);
+  bounds(recordedTrace) {
+    expect(recordedTrace.stats.compares).toBe(2);
+    expect(recordedTrace.stats.swaps).toBeLessThanOrEqual(1);
+    expect(recordedTrace.stats.sets).toBe(1);
   },
   examples: [
     { values: [0, 0, 0, 0, 0] },

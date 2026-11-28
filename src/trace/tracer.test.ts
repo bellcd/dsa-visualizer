@@ -37,36 +37,36 @@ const ops = (values: number[], fn: (t: ArrayTracer) => unknown) =>
 
 describe('trace()', () => {
   test('builds the envelope from the def and input', () => {
-    const tr = trace(
+    const recordedTrace = trace(
       def(() => 'r'),
       { values: [3] },
       7,
     );
-    expect(tr.version).toBe(1);
-    expect(tr.algorithm).toEqual({
+    expect(recordedTrace.version).toBe(1);
+    expect(recordedTrace.algorithm).toEqual({
       id: 'test',
       name: 'Test',
       pseudocode: ['one', 'two'],
     });
-    expect(tr.input).toEqual({ values: [3] });
-    expect(tr.seed).toBe(7);
-    expect(tr.result).toBe('r');
+    expect(recordedTrace.input).toEqual({ values: [3] });
+    expect(recordedTrace.seed).toBe(7);
+    expect(recordedTrace.result).toBe('r');
   });
 
   test('omits seed when none is given, and the trace survives JSON', () => {
-    const tr = run([2, 1], (t) => t.array('a').swap(0, 1));
-    expect('seed' in tr).toBe(false);
-    expect(JSON.parse(JSON.stringify(tr))).toEqual(tr);
+    const recordedTrace = run([2, 1], (t) => t.array('a').swap(0, 1));
+    expect('seed' in recordedTrace).toBe(false);
+    expect(JSON.parse(JSON.stringify(recordedTrace))).toEqual(recordedTrace);
   });
 
   test('trace() copies the input and the pseudocode', () => {
     const values = [1, 2];
     const d = def(() => 0);
-    const tr = trace(d, { values });
+    const recordedTrace = trace(d, { values });
     values.push(3);
     d.pseudocode.push('three');
-    expect(tr.input).toEqual({ values: [1, 2] });
-    expect(tr.algorithm.pseudocode).toEqual(['one', 'two']);
+    expect(recordedTrace.input).toEqual({ values: [1, 2] });
+    expect(recordedTrace.algorithm.pseudocode).toEqual(['one', 'two']);
   });
 
   test('validate runs first, and its InputError propagates', () => {
@@ -95,8 +95,8 @@ describe('trace()', () => {
 
 describe('ids', () => {
   test('ids are assigned 0..n-1 by index at setup', () => {
-    const tr = run([9, 9, 9], () => 0);
-    expect(tr.steps[0]?.state.a).toEqual({
+    const recordedTrace = run([9, 9, 9], () => 0);
+    expect(recordedTrace.steps[0]?.state.a).toEqual({
       kind: 'array',
       items: [
         { id: 0, value: 9 },
@@ -107,8 +107,8 @@ describe('ids', () => {
   });
 
   test('ids follow the items through a swap', () => {
-    const tr = run([5, 6], (t) => t.array('a').swap(0, 1));
-    expect(tr.steps[1]?.state.a).toEqual({
+    const recordedTrace = run([5, 6], (t) => t.array('a').swap(0, 1));
+    expect(recordedTrace.steps[1]?.state.a).toEqual({
       kind: 'array',
       items: [
         { id: 1, value: 6 },
@@ -120,12 +120,12 @@ describe('ids', () => {
 
 describe('init and done', () => {
   test('init is steps[0], before run, with no marks', () => {
-    const tr = run([1], (t) => {
+    const recordedTrace = run([1], (t) => {
       t.setVar('x', 1);
       t.line(1);
       t.array('a').swap(0, 0);
     });
-    expect(tr.steps[0]).toEqual({
+    expect(recordedTrace.steps[0]).toEqual({
       operation: { op: 'init' },
       state: { a: { kind: 'array', items: [{ id: 0, value: 1 }] } },
       marks: { pointers: {}, ranges: {}, tags: {}, vars: {} },
@@ -133,24 +133,24 @@ describe('init and done', () => {
   });
 
   test('done is last, after run, carrying the pending marks', () => {
-    const tr = run([1, 2], (t) => {
+    const recordedTrace = run([1, 2], (t) => {
       t.array('a').swap(0, 1);
       t.pointer('i', 'a', 1);
       t.setVar('x', 'late');
       t.note('bye');
       t.line(1);
     });
-    expect(tr.steps.map((s) => s.operation.op)).toEqual([
+    expect(recordedTrace.steps.map((s) => s.operation.op)).toEqual([
       'init',
       'swap',
       'done',
     ]);
-    const done = tr.steps[2];
+    const done = recordedTrace.steps[2];
     expect(done?.marks.pointers).toEqual({ i: { target: 'a', at: 1 } });
     expect(done?.marks.vars).toEqual({ x: 'late' });
     expect(done?.note).toBe('bye');
     expect(done?.line).toBe(1);
-    expect(done?.state).toEqual(tr.steps[1]?.state);
+    expect(done?.state).toEqual(recordedTrace.steps[1]?.state);
   });
 
   test('an empty run is just init and done', () => {
@@ -160,21 +160,21 @@ describe('init and done', () => {
 
 describe('operations append exactly one step', () => {
   test('compare appends exactly one step', () => {
-    const tr = run([1, 2], (t) => {
+    const recordedTrace = run([1, 2], (t) => {
       expect(t.array('a').compare(0, 1)).toBe(-1);
       expect(t.array('a').compare(1, 0)).toBe(1);
       expect(t.array('a').compare(1, 1)).toBe(0);
     });
-    expect(tr.steps.slice(1, 4).map((s) => s.operation)).toEqual([
+    expect(recordedTrace.steps.slice(1, 4).map((s) => s.operation)).toEqual([
       { op: 'compare', target: 'a', i: 0, j: 1, result: -1 },
       { op: 'compare', target: 'a', i: 1, j: 0, result: 1 },
       { op: 'compare', target: 'a', i: 1, j: 1, result: 0 },
     ]);
-    expect(tr.steps).toHaveLength(5);
+    expect(recordedTrace.steps).toHaveLength(5);
   });
 
   test('compareValue appends exactly one step', () => {
-    const tr = run([4], (t) => {
+    const recordedTrace = run([4], (t) => {
       const a = t.array('a');
       expect([
         a.compareValue(0, 9),
@@ -182,45 +182,45 @@ describe('operations append exactly one step', () => {
         a.compareValue(0, 4),
       ]).toEqual([-1, 1, 0]);
     });
-    expect(tr.steps[1]?.operation).toEqual({
+    expect(recordedTrace.steps[1]?.operation).toEqual({
       op: 'compareValue',
       target: 'a',
       i: 0,
       value: 9,
       result: -1,
     });
-    expect(tr.steps).toHaveLength(5);
+    expect(recordedTrace.steps).toHaveLength(5);
   });
 
   test('swap appends exactly one step', () => {
-    const tr = run([1, 2, 3], (t) => t.array('a').swap(0, 2));
-    expect(tr.steps[1]?.operation).toEqual({
+    const recordedTrace = run([1, 2, 3], (t) => t.array('a').swap(0, 2));
+    expect(recordedTrace.steps[1]?.operation).toEqual({
       op: 'swap',
       target: 'a',
       i: 0,
       j: 2,
     });
-    expect(tr.steps).toHaveLength(3);
+    expect(recordedTrace.steps).toHaveLength(3);
   });
 
   test('set appends exactly one step', () => {
-    const tr = run([1, 2], (t) => t.array('a').set(1, 8));
-    expect(tr.steps[1]?.operation).toEqual({
+    const recordedTrace = run([1, 2], (t) => t.array('a').set(1, 8));
+    expect(recordedTrace.steps[1]?.operation).toEqual({
       op: 'set',
       target: 'a',
       i: 1,
       value: 8,
       prev: 2,
     });
-    expect(tr.steps).toHaveLength(3);
+    expect(recordedTrace.steps).toHaveLength(3);
   });
 
   test('step appends exactly one step', () => {
-    const tr = run([1], (t) => {
+    const recordedTrace = run([1], (t) => {
       t.step();
       t.step();
     });
-    expect(tr.steps.map((s) => s.operation.op)).toEqual([
+    expect(recordedTrace.steps.map((s) => s.operation.op)).toEqual([
       'init',
       'mark',
       'mark',
@@ -229,7 +229,7 @@ describe('operations append exactly one step', () => {
   });
 
   test('each step carries a deep copy of the state and the marks', () => {
-    const tr = run([1, 2], (t) => {
+    const recordedTrace = run([1, 2], (t) => {
       const a = t.array('a');
       t.pointer('i', 'a', 0);
       t.tag('a', 0, 'seen');
@@ -238,7 +238,7 @@ describe('operations append exactly one step', () => {
       t.tag('a', 1, 'seen');
       a.swap(0, 1);
     });
-    const [init, s1, s2] = tr.steps;
+    const [init, s1, s2] = recordedTrace.steps;
     expect(init?.state.a).not.toBe(s1?.state.a);
     expect(s1?.state).not.toEqual(s2?.state === s1?.state ? null : undefined);
     expect(s1?.state.a).toEqual({
@@ -259,34 +259,36 @@ describe('operations append exactly one step', () => {
 
 describe('swap(i, i)', () => {
   test('swap(i, i) is recorded and counted, and changes nothing', () => {
-    const tr = run([7, 8], (t) => t.array('a').swap(1, 1));
-    expect(tr.steps[1]?.operation).toEqual({
+    const recordedTrace = run([7, 8], (t) => t.array('a').swap(1, 1));
+    expect(recordedTrace.steps[1]?.operation).toEqual({
       op: 'swap',
       target: 'a',
       i: 1,
       j: 1,
     });
-    expect(tr.steps[1]?.state).toEqual(tr.steps[0]?.state);
-    expect(tr.stats.swaps).toBe(1);
+    expect(recordedTrace.steps[1]?.state).toEqual(
+      recordedTrace.steps[0]?.state,
+    );
+    expect(recordedTrace.stats.swaps).toBe(1);
   });
 });
 
 describe('set(i, v)', () => {
   test('set(i, v) gives the slot a new, unused id', () => {
-    const tr = run([1, 2, 3], (t) => {
+    const recordedTrace = run([1, 2, 3], (t) => {
       const a = t.array('a');
       a.set(0, 10);
       a.set(0, 11);
       a.set(2, 12);
     });
     const ids = (n: number): number[] => {
-      const a = tr.steps[n]?.state.a;
+      const a = recordedTrace.steps[n]?.state.a;
       return a?.kind === 'array' ? a.items.map((x) => x.id) : [];
     };
     expect(ids(1)).toEqual([3, 1, 2]);
     expect(ids(2)).toEqual([4, 1, 2]);
     expect(ids(3)).toEqual([4, 1, 5]);
-    expect(tr.result).toBeUndefined();
+    expect(recordedTrace.result).toBeUndefined();
   });
 });
 
@@ -309,13 +311,13 @@ describe('marks and Steps', () => {
   });
 
   test('each Step carries a copy of the marks as they were', () => {
-    const tr = run([1, 2, 3], (t) => {
+    const recordedTrace = run([1, 2, 3], (t) => {
       t.pointer('i', 'a', 0);
       t.step();
       t.pointer('i', 'a', 2);
       t.step();
     });
-    expect(tr.steps.map((s) => s.marks.pointers)).toEqual([
+    expect(recordedTrace.steps.map((s) => s.marks.pointers)).toEqual([
       {},
       { i: { target: 'a', at: 0 } },
       { i: { target: 'a', at: 2 } },
@@ -347,7 +349,7 @@ describe('marks and State lengths', () => {
 
 describe('depth', () => {
   test('depth from enter and exit persists until changed, and zero is omitted', () => {
-    const tr = run([1], (t) => {
+    const recordedTrace = run([1], (t) => {
       t.step();
       t.enter();
       t.enter();
@@ -357,7 +359,7 @@ describe('depth', () => {
       t.exit();
       t.step();
     });
-    expect(tr.steps.map((s) => s.depth)).toEqual([
+    expect(recordedTrace.steps.map((s) => s.depth)).toEqual([
       undefined,
       undefined,
       2,
@@ -366,7 +368,9 @@ describe('depth', () => {
       undefined,
     ]);
     expect(
-      tr.steps.every((s) => !('depth' in s) || s.depth !== undefined),
+      recordedTrace.steps.every(
+        (s) => !('depth' in s) || s.depth !== undefined,
+      ),
     ).toBe(true);
   });
 
@@ -377,7 +381,7 @@ describe('depth', () => {
 
 describe('line and note', () => {
   test('line persists until changed', () => {
-    const tr = run([1], (t) => {
+    const recordedTrace = run([1], (t) => {
       t.step();
       t.line(0);
       t.step();
@@ -385,7 +389,7 @@ describe('line and note', () => {
       t.line(1);
       t.step();
     });
-    expect(tr.steps.map((s) => s.line)).toEqual([
+    expect(recordedTrace.steps.map((s) => s.line)).toEqual([
       undefined,
       undefined,
       0,
@@ -396,22 +400,22 @@ describe('line and note', () => {
   });
 
   test('line 0 is kept on the step rather than treated as unset', () => {
-    const tr = run([1], (t) => {
+    const recordedTrace = run([1], (t) => {
       t.line(0);
       t.step();
     });
-    expect(tr.steps[1]).toHaveProperty('line', 0);
+    expect(recordedTrace.steps[1]).toHaveProperty('line', 0);
   });
 
   test('note applies to the next step only', () => {
-    const tr = run([1, 2], (t) => {
+    const recordedTrace = run([1, 2], (t) => {
       t.note('first');
       t.array('a').swap(0, 1);
       t.step();
       t.note('');
       t.step();
     });
-    expect(tr.steps.map((s) => s.note)).toEqual([
+    expect(recordedTrace.steps.map((s) => s.note)).toEqual([
       undefined,
       'first',
       undefined,
@@ -423,7 +427,7 @@ describe('line and note', () => {
 
 describe('stats', () => {
   test('stats count compares (both kinds), swaps and sets', () => {
-    const tr = run([1, 2, 3], (t) => {
+    const recordedTrace = run([1, 2, 3], (t) => {
       const a = t.array('a');
       a.compare(0, 1);
       a.compareValue(0, 5);
@@ -435,7 +439,7 @@ describe('stats', () => {
       a.get(0);
       a.values();
     });
-    expect(tr.stats).toEqual({ compares: 3, swaps: 2, sets: 1 });
+    expect(recordedTrace.stats).toEqual({ compares: 3, swaps: 2, sets: 1 });
   });
 
   test('stats are all zero for an empty run', () => {
@@ -446,23 +450,23 @@ describe('stats', () => {
 describe('reads', () => {
   test('array reads (length, get, values) reflect the current state, silently', () => {
     const seen: unknown[] = [];
-    const tr = run([4, 5], (t) => {
+    const recordedTrace = run([4, 5], (t) => {
       const a = t.array('a');
       a.swap(0, 1);
       seen.push(a.length, a.get(0), a.values());
       return a.values();
     });
     expect(seen).toEqual([2, 5, [5, 4]]);
-    expect(tr.result).toEqual([5, 4]);
-    expect(tr.steps).toHaveLength(3);
+    expect(recordedTrace.result).toEqual([5, 4]);
+    expect(recordedTrace.steps).toHaveLength(3);
   });
 
   test('array values() returns a copy', () => {
-    const tr = run([1, 2], (t) => {
+    const recordedTrace = run([1, 2], (t) => {
       t.array('a').values().reverse();
       return t.array('a').values();
     });
-    expect(tr.result).toEqual([1, 2]);
+    expect(recordedTrace.result).toEqual([1, 2]);
   });
 });
 

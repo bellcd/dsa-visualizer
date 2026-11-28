@@ -91,9 +91,10 @@ export function algorithmContract<I extends Record<string, unknown>, R>(
     test.each(spec.pinned.map((p) => [JSON.stringify(p.input), p] as const))(
       '4. pinned counts: %s',
       (_name, pinned) => {
-        const tr = run(pinned.input);
-        expect(tr.stats).toEqual(pinned.stats);
-        if ('result' in pinned) expect(tr.result).toEqual(pinned.result);
+        const recordedTrace = run(pinned.input);
+        expect(recordedTrace.stats).toEqual(pinned.stats);
+        if ('result' in pinned)
+          expect(recordedTrace.result).toEqual(pinned.result);
       },
     );
   });

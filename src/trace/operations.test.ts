@@ -316,10 +316,10 @@ describe('pinned trace', () => {
     },
   };
 
-  const tr = trace(def, { values: [4, 4, 1] });
+  const recordedTrace = trace(def, { values: [4, 4, 1] });
 
   test('the Tracer reproduces a hand-written sequence of Operations', () => {
-    expect(tr.steps.map((s) => s.operation)).toEqual([
+    expect(recordedTrace.steps.map((s) => s.operation)).toEqual([
       { op: 'init' },
       { op: 'compare', target: 'a', i: 0, j: 1, result: 0 },
       { op: 'swap', target: 'a', i: 0, j: 1 },
@@ -336,7 +336,7 @@ describe('pinned trace', () => {
         items: pairs.map(([id, value]) => ({ id, value })),
       },
     });
-    expect(tr.steps.map((s) => s.state)).toEqual([
+    expect(recordedTrace.steps.map((s) => s.state)).toEqual([
       items([0, 4], [1, 4], [2, 1]),
       items([0, 4], [1, 4], [2, 1]),
       items([1, 4], [0, 4], [2, 1]),
@@ -347,6 +347,6 @@ describe('pinned trace', () => {
   });
 
   test('the Tracer reproduces a hand-written Stats count', () => {
-    expect(tr.stats).toEqual({ compares: 1, swaps: 2, sets: 1 });
+    expect(recordedTrace.stats).toEqual({ compares: 1, swaps: 2, sets: 1 });
   });
 });
